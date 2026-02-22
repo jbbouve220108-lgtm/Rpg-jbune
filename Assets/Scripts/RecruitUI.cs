@@ -3,26 +3,23 @@ using TMPro;
 
 public class RecruitUI : MonoBehaviour
 {
-    public static RecruitUI Instance { get; private set; }
+    public static RecruitUI Instance;
 
     [Header("UI")]
     public GameObject panel;
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI costText;
 
-    [Header("HUD to hide")]
-    [SerializeField] private GameObject hudPanel;
+    [Header("HUD")]
+    public GameObject hudPanel;
+
+    [Header("Texts")]
+    public TextMeshProUGUI goldText;
 
     private Recruitable currentRecruit;
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
         Instance = this;
         panel.SetActive(false);
     }
@@ -34,6 +31,8 @@ public class RecruitUI : MonoBehaviour
 
         currentRecruit = recruit;
 
+        UIState.IsModalOpen = true;
+
         if (hudPanel != null)
             hudPanel.SetActive(false);
 
@@ -41,6 +40,7 @@ public class RecruitUI : MonoBehaviour
         nameText.text = unit != null ? unit.unitName : "Unknown";
         costText.text = $"Cost: {recruit.recruitCost} gold";
 
+        UpdateGoldText();
         panel.SetActive(true);
     }
 
@@ -51,11 +51,24 @@ public class RecruitUI : MonoBehaviour
 
         if (hudPanel != null)
             hudPanel.SetActive(true);
+
+        UIState.IsModalOpen = false;
     }
 
     public void ConfirmRecruit()
     {
         if (currentRecruit != null)
+        {
             currentRecruit.Recruit();
+            UpdateGoldText(); // 🔁 refresh après recrutement
+        }
+    }
+
+    void UpdateGoldText()
+    {
+        if (goldText != null && PlayerResources.Instance != null)
+        {
+            goldText.text = $"Gold: {PlayerResources.Instance.gold}";
+        }
     }
 }

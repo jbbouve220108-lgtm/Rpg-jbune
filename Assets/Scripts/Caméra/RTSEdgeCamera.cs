@@ -27,6 +27,10 @@ public class TopDownEdgeCamera : MonoBehaviour
 
     void Update()
     {
+        // ⛔ Bloque TOUT quand une UI est ouverte
+        if (UIState.IsModalOpen)
+            return;
+
         bool rotating = Input.GetMouseButton(2);
 
         if (!rotating)

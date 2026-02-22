@@ -1,25 +1,23 @@
 using UnityEngine;
+using TMPro;
 
 public class MerchantUI : MonoBehaviour
 {
-    public static MerchantUI Instance { get; private set; }
+    public static MerchantUI Instance;
 
     [Header("UI")]
-    [SerializeField] private GameObject panel;
+    public GameObject panel;
 
-    [Header("HUD to hide")]
-    [SerializeField] private GameObject hudPanel;
+    [Header("HUD")]
+    public GameObject hudPanel;
+
+    [Header("Texts")]
+    public TextMeshProUGUI goldText;
 
     private Merchant currentMerchant;
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
         Instance = this;
         panel.SetActive(false);
     }
@@ -31,25 +29,40 @@ public class MerchantUI : MonoBehaviour
 
         currentMerchant = merchant;
 
+        UIState.IsModalOpen = true;
+
         if (hudPanel != null)
             hudPanel.SetActive(false);
 
+        UpdateGoldText();
         panel.SetActive(true);
     }
 
     public void Close()
     {
         currentMerchant = null;
-
         panel.SetActive(false);
 
         if (hudPanel != null)
             hudPanel.SetActive(true);
+
+        UIState.IsModalOpen = false;
     }
 
     public void BuyFood()
     {
         if (currentMerchant != null)
+        {
             currentMerchant.BuyFood();
+            UpdateGoldText(); // 🔁 refresh après achat
+        }
+    }
+
+    void UpdateGoldText()
+    {
+        if (goldText != null && PlayerResources.Instance != null)
+        {
+            goldText.text = $"Gold: {PlayerResources.Instance.gold}";
+        }
     }
 }
