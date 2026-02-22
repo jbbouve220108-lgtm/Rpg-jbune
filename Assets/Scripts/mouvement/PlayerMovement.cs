@@ -16,13 +16,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-
-        if (UIBlocker.Instance != null && UIBlocker.Instance.IsBlocked())
-            return;
-        
-        if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
-            return;
-
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 

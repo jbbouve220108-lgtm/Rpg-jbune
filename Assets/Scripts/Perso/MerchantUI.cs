@@ -7,8 +7,8 @@ public class MerchantUI : MonoBehaviour
     [Header("UI")]
     [SerializeField] private GameObject panel;
 
-    [Header("Panels to block")]
-    public CanvasGroup[] panelsToBlock;
+    [Header("HUD to hide")]
+    [SerializeField] private GameObject hudPanel;
 
     private Merchant currentMerchant;
 
@@ -31,8 +31,8 @@ public class MerchantUI : MonoBehaviour
 
         currentMerchant = merchant;
 
-        foreach (var p in panelsToBlock)
-            UIBlocker.Instance?.Block(p);
+        if (hudPanel != null)
+            hudPanel.SetActive(false);
 
         panel.SetActive(true);
     }
@@ -40,10 +40,11 @@ public class MerchantUI : MonoBehaviour
     public void Close()
     {
         currentMerchant = null;
+
         panel.SetActive(false);
 
-        foreach (var p in panelsToBlock)
-            UIBlocker.Instance?.Unblock(p);
+        if (hudPanel != null)
+            hudPanel.SetActive(true);
     }
 
     public void BuyFood()

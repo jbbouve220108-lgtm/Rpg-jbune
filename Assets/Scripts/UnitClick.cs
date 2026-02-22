@@ -4,9 +4,6 @@ public class UnitClick : MonoBehaviour
 {
     void Update()
     {
-        if (UIBlocker.Instance != null && UIBlocker.Instance.IsBlocked())
-            return;
-
         if (!Input.GetMouseButtonDown(0))
             return;
 
@@ -15,9 +12,7 @@ public class UnitClick : MonoBehaviour
             return;
 
         Recruitable recruit = hit.collider.GetComponentInParent<Recruitable>();
-        if (recruit != null)
-        {
+        if (recruit)
             recruit.OnClicked();
-        }
     }
 }

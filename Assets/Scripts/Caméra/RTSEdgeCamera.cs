@@ -27,9 +27,6 @@ public class TopDownEdgeCamera : MonoBehaviour
 
     void Update()
     {
-        if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
-            return;
-
         bool rotating = Input.GetMouseButton(2);
 
         if (!rotating)
@@ -41,7 +38,6 @@ public class TopDownEdgeCamera : MonoBehaviour
             HandleTilt();
     }
 
-    // 🟦 Déplacement par bords d’écran
     void HandleEdgeMovement()
     {
         Vector3 move = Vector3.zero;
@@ -55,7 +51,6 @@ public class TopDownEdgeCamera : MonoBehaviour
         transform.position += move.normalized * moveSpeed * Time.deltaTime;
     }
 
-    // 🔍 Zoom vers la souris
     void HandleZoom()
     {
         float scroll = Input.GetAxis("Mouse ScrollWheel");
@@ -73,7 +68,6 @@ public class TopDownEdgeCamera : MonoBehaviour
         camTransform.position = pivot + dir * distance;
     }
 
-    // 🔽 Inclinaison haut / bas uniquement
     void HandleTilt()
     {
         if (!TryGetMouseGroundPoint(out Vector3 pivot))
@@ -88,7 +82,6 @@ public class TopDownEdgeCamera : MonoBehaviour
             -mouseY * tiltSpeed * 100f * Time.deltaTime
         );
 
-        // Clamp inclinaison
         Vector3 euler = camTransform.eulerAngles;
         float x = euler.x > 180 ? euler.x - 360 : euler.x;
         x = Mathf.Clamp(x, minTilt, maxTilt);
@@ -96,7 +89,6 @@ public class TopDownEdgeCamera : MonoBehaviour
         camTransform.eulerAngles = new Vector3(x, 0, 0);
     }
 
-    // 🎯 Point au sol sous la souris
     bool TryGetMouseGroundPoint(out Vector3 point)
     {
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);

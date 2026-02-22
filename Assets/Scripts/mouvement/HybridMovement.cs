@@ -14,16 +14,6 @@ public class HybridMovement : MonoBehaviour
 
     void Update()
     {
-    if (UIBlocker.Instance != null && UIBlocker.Instance.IsBlocked())
-        return;
-    if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
-        return;
-
-        HandleKeyboardMovement();
-    }
-
-    void HandleKeyboardMovement()
-    {
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 

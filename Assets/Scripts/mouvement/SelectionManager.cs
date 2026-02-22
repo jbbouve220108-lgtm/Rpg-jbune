@@ -10,13 +10,11 @@ public class SelectionManager : MonoBehaviour
     public float dragDistance = 10f;
     public float clickTime = 0.2f;
 
-    // ---- LEFT CLICK ----
     private Vector2 leftStart;
     private float leftDownTime;
     private bool leftDragging;
     private Rect selectionRect;
 
-    // ---- RIGHT CLICK ----
     private Vector2 rightStart;
     private float rightDownTime;
     private bool rightDragging;
@@ -30,18 +28,11 @@ public class SelectionManager : MonoBehaviour
 
     void Update()
     {
-        if (UIBlocker.Instance != null && UIBlocker.Instance.IsBlocked())
-            return;
-        if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
-            return;
-
         HandleLeftMouse();
         HandleRightMouse();
     }
 
-    // ======================================================
-    // 🟩 LEFT CLICK — selection / order
-    // ======================================================
+    // ================= LEFT CLICK =================
     void HandleLeftMouse()
     {
         if (Input.GetMouseButtonDown(0))
@@ -107,12 +98,9 @@ public class SelectionManager : MonoBehaviour
         }
     }
 
-    // ======================================================
-    // 🟥 RIGHT CLICK — deselect / formation
-    // ======================================================
+    // ================= RIGHT CLICK =================
     void HandleRightMouse()
     {
-        // Mouse down
         if (Input.GetMouseButtonDown(1))
         {
             rightStart = Input.mousePosition;
@@ -120,7 +108,6 @@ public class SelectionManager : MonoBehaviour
             rightDragging = false;
         }
 
-        // Mouse hold
         if (Input.GetMouseButton(1))
         {
             float dist = Vector2.Distance(rightStart, Input.mousePosition);
@@ -130,10 +117,8 @@ public class SelectionManager : MonoBehaviour
                 rightDragging = true;
         }
 
-        // Mouse up
         if (Input.GetMouseButtonUp(1))
         {
-            // 🔴 PRIORITÉ ABSOLUE : Shift + unité
             if (Input.GetKey(KeyCode.LeftShift))
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -141,27 +126,22 @@ public class SelectionManager : MonoBehaviour
                 {
                     SelectableUnit unit = hit.collider.GetComponentInParent<SelectableUnit>();
                     if (unit)
-                    {
                         DeselectUnit(unit);
-                        return;
-                    }
                 }
-                // Shift + clic droit sur sol → rien
                 return;
             }
 
-            // 🟢 clic droit maintenu → formation (gérée ailleurs)
-            if (rightDragging)
-                return;
-
-            // 🟡 clic droit court → désélection totale
-            DeselectAll();
+            if (!rightDragging)
+                DeselectAll();
         }
     }
 
-    // ======================================================
-    // 🧩 API
-    // ======================================================
+    // ================= API =================
+    public List<SelectableUnit> GetSelectedUnits()
+    {
+        return selectedUnits;
+    }
+
     public void SelectUnit(SelectableUnit unit)
     {
         if (!selectedUnits.Contains(unit))
@@ -188,14 +168,7 @@ public class SelectionManager : MonoBehaviour
         selectedUnits.Clear();
     }
 
-    public List<SelectableUnit> GetSelectedUnits()
-    {
-        return selectedUnits;
-    }
-
-    // ======================================================
-    // 🔧 UTILS
-    // ======================================================
+    // ================= UTILS =================
     Rect GetScreenRect(Vector2 p1, Vector2 p2)
     {
         p1.y = Screen.height - p1.y;
@@ -213,11 +186,6 @@ public class SelectionManager : MonoBehaviour
     {
         GUI.color = new Color(0, 1, 0, 0.25f);
         GUI.DrawTexture(rect, Texture2D.whiteTexture);
-
         GUI.color = Color.green;
-        GUI.DrawTexture(new Rect(rect.xMin, rect.yMin, rect.width, 1), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(rect.xMin, rect.yMax, rect.width, 1), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(rect.xMin, rect.yMin, 1, rect.height), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(rect.xMax, rect.yMin, 1, rect.height), Texture2D.whiteTexture);
     }
 }

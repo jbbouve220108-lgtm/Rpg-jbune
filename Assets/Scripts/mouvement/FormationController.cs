@@ -20,18 +20,11 @@ public class FormationController : MonoBehaviour
 
     void Update()
     {
-    if (UIBlocker.Instance != null && UIBlocker.Instance.IsBlocked())
-        return;
-    if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
-        return;
-    
-
-    HandleRightMouse();
- }
+        HandleRightMouse();
+    }
 
     void HandleRightMouse()
     {
-        // Mouse down → on mémorise, MAIS on ne démarre PAS la formation
         if (Input.GetMouseButtonDown(1))
         {
             rightStart = Input.mousePosition;
@@ -39,7 +32,6 @@ public class FormationController : MonoBehaviour
             forming = false;
         }
 
-        // Mouse hold → on vérifie si on ENTRE en formation
         if (Input.GetMouseButton(1))
         {
             float dist = Vector2.Distance(rightStart, Input.mousePosition);
@@ -51,12 +43,9 @@ public class FormationController : MonoBehaviour
             }
 
             if (forming)
-            {
                 UpdateFormationPreview();
-            }
         }
 
-        // Mouse up
         if (Input.GetMouseButtonUp(1))
         {
             if (forming)
@@ -67,9 +56,6 @@ public class FormationController : MonoBehaviour
         }
     }
 
-    // =========================
-    // 🟢 DÉMARRAGE FORMATION
-    // =========================
     void TryStartFormation()
     {
         var units = SelectionManager.Instance.GetSelectedUnits();
@@ -83,9 +69,6 @@ public class FormationController : MonoBehaviour
         CreateMarkers(units.Count);
     }
 
-    // =========================
-    // 🔵 PREVIEW FORMATION
-    // =========================
     void UpdateFormationPreview()
     {
         if (!TryGetMouseGround(out Vector3 current))
@@ -98,10 +81,9 @@ public class FormationController : MonoBehaviour
         Vector3 right = Vector3.Cross(Vector3.up, dir);
 
         var units = SelectionManager.Instance.GetSelectedUnits();
-        int count = units.Count;
-        float half = (count - 1) / 2f;
+        float half = (units.Count - 1) / 2f;
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < units.Count; i++)
         {
             Vector3 pos = startPoint + right * (i - half) * spacing;
             markers[i].transform.position = pos + Vector3.up * 0.05f;
@@ -109,9 +91,6 @@ public class FormationController : MonoBehaviour
         }
     }
 
-    // =========================
-    // ✅ CONFIRMATION
-    // =========================
     void ConfirmFormation()
     {
         var units = SelectionManager.Instance.GetSelectedUnits();
@@ -126,9 +105,6 @@ public class FormationController : MonoBehaviour
         ClearMarkers();
     }
 
-    // =========================
-    // 🧱 MARKERS
-    // =========================
     void CreateMarkers(int count)
     {
         ClearMarkers();
@@ -149,9 +125,6 @@ public class FormationController : MonoBehaviour
         markers.Clear();
     }
 
-    // =========================
-    // 🎯 SOL
-    // =========================
     bool TryGetMouseGround(out Vector3 point)
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);

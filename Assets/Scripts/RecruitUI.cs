@@ -10,8 +10,8 @@ public class RecruitUI : MonoBehaviour
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI costText;
 
-    [Header("Panels to block")]
-    public CanvasGroup[] panelsToBlock;
+    [Header("HUD to hide")]
+    [SerializeField] private GameObject hudPanel;
 
     private Recruitable currentRecruit;
 
@@ -29,11 +29,13 @@ public class RecruitUI : MonoBehaviour
 
     public void Open(Recruitable recruit)
     {
+        if (recruit == null)
+            return;
+
         currentRecruit = recruit;
 
-        // 🔒 Bloque UNIQUEMENT les panels choisis
-        foreach (var p in panelsToBlock)
-            UIBlocker.Instance?.Block(p);
+        if (hudPanel != null)
+            hudPanel.SetActive(false);
 
         Unit unit = recruit.GetComponent<Unit>();
         nameText.text = unit != null ? unit.unitName : "Unknown";
@@ -47,9 +49,8 @@ public class RecruitUI : MonoBehaviour
         panel.SetActive(false);
         currentRecruit = null;
 
-        // 🔓 Débloque les panels
-        foreach (var p in panelsToBlock)
-            UIBlocker.Instance?.Unblock(p);
+        if (hudPanel != null)
+            hudPanel.SetActive(true);
     }
 
     public void ConfirmRecruit()
