@@ -2,30 +2,40 @@ using UnityEngine;
 
 public class TopDownEdgeCamera : MonoBehaviour
 {
-    [Header("Movement (screen edges only)")]
+    [Header("Movement (screen edges)")]
     public float moveSpeed = 20f;
     public float edgeSize = 20f;
 
     [Header("Zoom")]
-    public float zoomSpeed = 200f;
-    public float minHeight = 10f;
-    public float maxHeight = 50f;
+    public float zoomSpeed = 15f;
+    public float minDistance = 10f;
+    public float maxDistance = 50f;
 
-    [Header("Rotation")]
-    public float rotationSpeed = 3f;
+    [Header("Tilt (mouse wheel drag)")]
+    public float tiltSpeed = 3f;
+    public float minTilt = 45f;
+    public float maxTilt = 90f;
 
     private Camera cam;
+    private Transform camTransform;
 
     void Start()
     {
         cam = GetComponentInChildren<Camera>();
+        camTransform = cam.transform;
     }
 
     void Update()
     {
-        HandleEdgeMovement();
+        bool rotating = Input.GetMouseButton(2);
+
+        if (!rotating)
+            HandleEdgeMovement();
+
         HandleZoom();
-        HandleRotation();
+
+        if (rotating)
+            HandleTilt();
     }
 
     // 🟦 Déplacement par bords d’écran
@@ -39,31 +49,61 @@ public class TopDownEdgeCamera : MonoBehaviour
         if (mousePos.y <= edgeSize) move.z -= 1;
         if (mousePos.y >= Screen.height - edgeSize) move.z += 1;
 
-        // déplacement relatif à la rotation actuelle
-        Vector3 rotatedMove = Quaternion.Euler(0, transform.eulerAngles.y, 0) * move;
-        transform.position += rotatedMove.normalized * moveSpeed * Time.deltaTime;
+        transform.position += move.normalized * moveSpeed * Time.deltaTime;
     }
 
-    // 🔍 Zoom vertical
+    // 🔍 Zoom vers la souris
     void HandleZoom()
     {
         float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (Mathf.Abs(scroll) > 0.01f)
-        {
-            Vector3 pos = cam.transform.localPosition;
-            pos.y -= scroll * zoomSpeed * Time.deltaTime;
-            pos.y = Mathf.Clamp(pos.y, minHeight, maxHeight);
-            cam.transform.localPosition = pos;
-        }
+        if (Mathf.Abs(scroll) < 0.01f) return;
+
+        if (!TryGetMouseGroundPoint(out Vector3 pivot))
+            return;
+
+        Vector3 dir = (camTransform.position - pivot).normalized;
+        float distance = Vector3.Distance(camTransform.position, pivot);
+
+        distance -= scroll * zoomSpeed;
+        distance = Mathf.Clamp(distance, minDistance, maxDistance);
+
+        camTransform.position = pivot + dir * distance;
     }
 
-    // 🔄 Rotation avec molette maintenue
-    void HandleRotation()
+    // 🔽 Inclinaison haut / bas uniquement
+    void HandleTilt()
     {
-        if (Input.GetMouseButton(2)) // clic molette
+        if (!TryGetMouseGroundPoint(out Vector3 pivot))
+            return;
+
+        float mouseY = Input.GetAxis("Mouse Y");
+
+        Vector3 right = camTransform.right;
+        camTransform.RotateAround(
+            pivot,
+            right,
+            -mouseY * tiltSpeed * 100f * Time.deltaTime
+        );
+
+        // Clamp inclinaison
+        Vector3 euler = camTransform.eulerAngles;
+        float x = euler.x > 180 ? euler.x - 360 : euler.x;
+        x = Mathf.Clamp(x, minTilt, maxTilt);
+
+        camTransform.eulerAngles = new Vector3(x, 0, 0);
+    }
+
+    // 🎯 Point au sol sous la souris
+    bool TryGetMouseGroundPoint(out Vector3 point)
+    {
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit, 500f))
         {
-            float mouseX = Input.GetAxis("Mouse X");
-            transform.Rotate(Vector3.up, mouseX * rotationSpeed * 100f * Time.deltaTime);
+            point = hit.point;
+            return true;
         }
+
+        point = Vector3.zero;
+        return false;
     }
 }
