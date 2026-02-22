@@ -1,13 +1,16 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
 
 public class HybridMovement : MonoBehaviour
 {
     public float keyboardSpeed = 4f;
     public GameObject moveMarker;
+    public float markerDuration = 1.5f;
 
     private NavMeshAgent agent;
     private Camera mainCamera;
+    private Coroutine markerCoroutine;
 
     void Awake()
     {
@@ -22,7 +25,6 @@ public class HybridMovement : MonoBehaviour
     {
         HandleKeyboardMovement();
         HandleClickMovement();
-        HandleArrival();
     }
 
     // ⌨️ ZQSD prioritaire
@@ -36,8 +38,7 @@ public class HybridMovement : MonoBehaviour
             if (agent.hasPath)
                 agent.ResetPath();
 
-            if (moveMarker)
-                moveMarker.SetActive(false);
+            HideMarker();
 
             Vector3 move = new Vector3(h, 0, v).normalized;
             agent.Move(move * keyboardSpeed * Time.deltaTime);
@@ -63,26 +64,41 @@ public class HybridMovement : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 agent.SetDestination(hit.point);
-
-                if (moveMarker)
-                {
-                    moveMarker.transform.position = hit.point + Vector3.up * 0.02f;
-                    moveMarker.SetActive(true);
-                }
+                ShowMarker(hit.point);
             }
         }
     }
 
-    // 🎯 Arrivée à destination
-    void HandleArrival()
+    // 🎯 Affiche le marker temporairement
+    void ShowMarker(Vector3 position)
     {
-        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
-        {
-            if (agent.hasPath)
-                agent.ResetPath();
+        if (!moveMarker) return;
 
-            if (moveMarker)
-                moveMarker.SetActive(false);
+        moveMarker.transform.position = position + Vector3.up * 0.02f;
+        moveMarker.SetActive(true);
+
+        if (markerCoroutine != null)
+            StopCoroutine(markerCoroutine);
+
+        markerCoroutine = StartCoroutine(HideMarkerAfterDelay());
+    }
+
+    IEnumerator HideMarkerAfterDelay()
+    {
+        yield return new WaitForSeconds(markerDuration);
+        HideMarker();
+    }
+
+    void HideMarker()
+    {
+        if (!moveMarker) return;
+
+        moveMarker.SetActive(false);
+
+        if (markerCoroutine != null)
+        {
+            StopCoroutine(markerCoroutine);
+            markerCoroutine = null;
         }
     }
 }
