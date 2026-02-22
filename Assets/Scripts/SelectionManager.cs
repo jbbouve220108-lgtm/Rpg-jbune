@@ -10,13 +10,13 @@ public class SelectionManager : MonoBehaviour
     public float dragDistance = 10f;
     public float clickTime = 0.2f;
 
-    // ---- CLIC GAUCHE ----
+    // ---- LEFT CLICK ----
     private Vector2 leftStart;
     private float leftDownTime;
     private bool leftDragging;
     private Rect selectionRect;
 
-    // ---- CLIC DROIT ----
+    // ---- RIGHT CLICK ----
     private Vector2 rightStart;
     private float rightDownTime;
     private bool rightDragging;
@@ -35,11 +35,10 @@ public class SelectionManager : MonoBehaviour
     }
 
     // ======================================================
-    // 🟩 CLIC GAUCHE — sélection / ordre
+    // 🟩 LEFT CLICK — selection / order
     // ======================================================
     void HandleLeftMouse()
     {
-        // Mouse down
         if (Input.GetMouseButtonDown(0))
         {
             leftStart = Input.mousePosition;
@@ -47,23 +46,21 @@ public class SelectionManager : MonoBehaviour
             leftDragging = false;
         }
 
-        // Mouse hold
         if (Input.GetMouseButton(0))
         {
             float dist = Vector2.Distance(leftStart, Input.mousePosition);
-            float timeHeld = Time.time - leftDownTime;
+            float held = Time.time - leftDownTime;
 
-            if (dist > dragDistance || timeHeld > clickTime)
+            if (dist > dragDistance || held > clickTime)
                 leftDragging = true;
         }
 
-        // Mouse up
         if (Input.GetMouseButtonUp(0))
         {
             if (leftDragging)
                 SelectUnitsInRectangle();
             else
-                HandleLeftClickOrder();
+                IssueOrder();
         }
     }
 
@@ -76,7 +73,7 @@ public class SelectionManager : MonoBehaviour
         }
     }
 
-    void HandleLeftClickOrder()
+    void IssueOrder()
     {
         if (selectedUnits.Count == 0)
             return;
@@ -106,7 +103,7 @@ public class SelectionManager : MonoBehaviour
     }
 
     // ======================================================
-    // 🟥 CLIC DROIT — désélection OU formation
+    // 🟥 RIGHT CLICK — deselect / formation
     // ======================================================
     void HandleRightMouse()
     {
@@ -122,49 +119,43 @@ public class SelectionManager : MonoBehaviour
         if (Input.GetMouseButton(1))
         {
             float dist = Vector2.Distance(rightStart, Input.mousePosition);
-            float timeHeld = Time.time - rightDownTime;
+            float held = Time.time - rightDownTime;
 
-            if (dist > dragDistance || timeHeld > clickTime)
+            if (dist > dragDistance || held > clickTime)
                 rightDragging = true;
         }
 
         // Mouse up
         if (Input.GetMouseButtonUp(1))
         {
-            // 🟢 CLIC DROIT MAINTENU → FORMATION
+            // 🔴 PRIORITÉ ABSOLUE : Shift + unité
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out RaycastHit hit))
+                {
+                    SelectableUnit unit = hit.collider.GetComponentInParent<SelectableUnit>();
+                    if (unit)
+                    {
+                        DeselectUnit(unit);
+                        return;
+                    }
+                }
+                // Shift + clic droit sur sol → rien
+                return;
+            }
+
+            // 🟢 clic droit maintenu → formation (gérée ailleurs)
             if (rightDragging)
                 return;
 
-            // 🟡 CLIC DROIT COURT → DÉSÉLECTION
-            HandleRightClickDeselect();
-        }
-    }
-
-    void HandleRightClickDeselect()
-    {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-        if (!Physics.Raycast(ray, out RaycastHit hit))
-        {
+            // 🟡 clic droit court → désélection totale
             DeselectAll();
-            return;
         }
-
-        SelectableUnit unit = hit.collider.GetComponentInParent<SelectableUnit>();
-
-        // Shift + clic droit sur une unité → désélection unitaire
-        if (unit && Input.GetKey(KeyCode.LeftShift))
-        {
-            DeselectUnit(unit);
-            return;
-        }
-
-        // clic droit court → désélection totale
-        DeselectAll();
     }
 
     // ======================================================
-    // 🧩 API PUBLIQUE
+    // 🧩 API
     // ======================================================
     public void SelectUnit(SelectableUnit unit)
     {
