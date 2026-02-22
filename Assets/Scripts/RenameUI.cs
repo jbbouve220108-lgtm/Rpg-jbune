@@ -32,19 +32,28 @@ public class RenameUI : MonoBehaviour
 
     public void Confirm()
     {
-        if (currentUnit != null && !string.IsNullOrWhiteSpace(nameInput.text))
+        if (currentUnit != null)
         {
-            currentUnit.unitName = nameInput.text.Trim();
+            string newName = nameInput.text.Trim();
+            if (!string.IsNullOrEmpty(newName))
+            {
+                currentUnit.unitName = newName;
+            }
+        }
+
+        // 🔴 FERMER AUSSI LA FENÊTRE DE RECRUTEMENT
+        if (RecruitUI.Instance != null)
+        {
+            RecruitUI.Instance.Close();
         }
 
         Close();
     }
 
-    void Close()
+    public void Close()
     {
         currentUnit = null;
         panel.SetActive(false);
-
         UIState.IsModalOpen = false;
     }
 }
