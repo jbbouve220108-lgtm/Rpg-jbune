@@ -4,6 +4,7 @@ using UnityEngine.AI;
 public class HybridMovement : MonoBehaviour
 {
     public float keyboardSpeed = 4f;
+    public GameObject moveMarker;
 
     private NavMeshAgent agent;
     private Camera mainCamera;
@@ -12,15 +13,19 @@ public class HybridMovement : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         mainCamera = Camera.main;
+
+        if (moveMarker)
+            moveMarker.SetActive(false);
     }
 
     void Update()
     {
         HandleKeyboardMovement();
         HandleClickMovement();
+        HandleArrival();
     }
 
-    // ⌨️ ZQSD / WASD (prioritaire)
+    // ⌨️ ZQSD prioritaire
     void HandleKeyboardMovement()
     {
         float h = Input.GetAxisRaw("Horizontal");
@@ -28,22 +33,19 @@ public class HybridMovement : MonoBehaviour
 
         if (Mathf.Abs(h) > 0.01f || Mathf.Abs(v) > 0.01f)
         {
-            // Stop déplacement par clic
             if (agent.hasPath)
                 agent.ResetPath();
+
+            if (moveMarker)
+                moveMarker.SetActive(false);
 
             Vector3 move = new Vector3(h, 0, v).normalized;
             agent.Move(move * keyboardSpeed * Time.deltaTime);
 
-            // Oriente le personnage vers la direction
             if (move != Vector3.zero)
             {
-                Quaternion targetRot = Quaternion.LookRotation(move);
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    targetRot,
-                    Time.deltaTime * 10f
-                );
+                Quaternion rot = Quaternion.LookRotation(move);
+                transform.rotation = Quaternion.Slerp(transform.rotation, rot, Time.deltaTime * 10f);
             }
         }
     }
@@ -51,7 +53,6 @@ public class HybridMovement : MonoBehaviour
     // 🖱️ Clic souris
     void HandleClickMovement()
     {
-        // Si le clavier est utilisé → on ignore le clic
         if (Input.GetAxisRaw("Horizontal") != 0 || Input.GetAxisRaw("Vertical") != 0)
             return;
 
@@ -62,7 +63,26 @@ public class HybridMovement : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 agent.SetDestination(hit.point);
+
+                if (moveMarker)
+                {
+                    moveMarker.transform.position = hit.point + Vector3.up * 0.02f;
+                    moveMarker.SetActive(true);
+                }
             }
+        }
+    }
+
+    // 🎯 Arrivée à destination
+    void HandleArrival()
+    {
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        {
+            if (agent.hasPath)
+                agent.ResetPath();
+
+            if (moveMarker)
+                moveMarker.SetActive(false);
         }
     }
 }
