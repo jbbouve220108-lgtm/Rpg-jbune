@@ -30,6 +30,11 @@ public class SelectionManager : MonoBehaviour
 
     void Update()
     {
+        if (UIBlocker.Instance != null && UIBlocker.Instance.IsBlocked())
+            return;
+        if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
+            return;
+
         HandleLeftMouse();
         HandleRightMouse();
     }

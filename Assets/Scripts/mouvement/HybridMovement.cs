@@ -14,6 +14,8 @@ public class HybridMovement : MonoBehaviour
 
     void Update()
     {
+    if (UIBlocker.Instance != null && UIBlocker.Instance.IsBlocked())
+        return;
     if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
         return;
 

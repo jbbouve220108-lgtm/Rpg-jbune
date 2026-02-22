@@ -7,6 +7,9 @@ public class MerchantUI : MonoBehaviour
     [Header("UI")]
     [SerializeField] private GameObject panel;
 
+    [Header("Panels to block")]
+    public CanvasGroup[] panelsToBlock;
+
     private Merchant currentMerchant;
 
     void Awake()
@@ -21,37 +24,31 @@ public class MerchantUI : MonoBehaviour
         panel.SetActive(false);
     }
 
-    public bool IsOpen()
-    {
-        return panel.activeSelf;
-    }
-
     public void Open(Merchant merchant)
     {
-        if (merchant == null) return;
+        if (merchant == null)
+            return;
 
         currentMerchant = merchant;
-        panel.SetActive(true);
 
-        Debug.Log($"Merchant UI opened with {merchant.name}");
+        foreach (var p in panelsToBlock)
+            UIBlocker.Instance?.Block(p);
+
+        panel.SetActive(true);
     }
 
     public void Close()
     {
         currentMerchant = null;
         panel.SetActive(false);
+
+        foreach (var p in panelsToBlock)
+            UIBlocker.Instance?.Unblock(p);
     }
 
     public void BuyFood()
     {
-        if (currentMerchant == null)
-        {
-            Debug.LogWarning("BuyFood called but no merchant set");
-            return;
-        }
-
-        currentMerchant.BuyFood();
-        Debug.Log("BUY FOOD CLICKED");
-
+        if (currentMerchant != null)
+            currentMerchant.BuyFood();
     }
 }
