@@ -1,49 +1,48 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Unit))]
 public class Recruitable : MonoBehaviour
 {
     [Header("Recruitment")]
     public int recruitCost = 50;
 
-    private Unit unit;
+    private bool recruited = false;
 
-    void Awake()
-    {
-        unit = GetComponent<Unit>();
-        unit.unitType = UnitType.Recruitable;
-    }
-
+    // 👉 Appelé quand on clique sur le PNJ
     public void OnClicked()
     {
-        if (RecruitUI.Instance != null)
-        {
-            RecruitUI.Instance.Open(this);
-        }
+        if (recruited)
+            return;
+
+        // 🟢 Ouvre UNIQUEMENT l'UI de recrutement
+        RecruitUI.Instance.Open(this);
     }
 
+    public bool CanRecruit()
+    {
+        if (recruited)
+            return false;
+
+        if (PlayerResources.Instance == null)
+            return false;
+
+        return PlayerResources.Instance.gold >= recruitCost;
+    }
+
+    // 👉 Appelé UNIQUEMENT par le bouton "Recruter"
     public void Recruit()
     {
-        // Sécurité
-        if (PlayerResources.Instance == null)
+        if (!CanRecruit())
             return;
 
-        if (!PlayerResources.Instance.SpendGold(recruitCost))
+        PlayerResources.Instance.gold -= recruitCost;
+        recruited = true;
+
+        Unit unit = GetComponent<Unit>();
+        if (unit != null)
         {
-            Debug.Log("Not enough gold to recruit");
-            return;
+            RenameUI.Instance.Open(unit);
         }
 
-        // Changement d’état
-        unit.unitType = UnitType.Companion;
-
-        Debug.Log($"Recruited {unit.unitName} for {recruitCost} gold");
-
-        // IMPORTANT : on enlève le statut recruttable
-        Destroy(this);
-
-        // Fermeture UI
-        if (RecruitUI.Instance != null)
-            RecruitUI.Instance.Close();
+        this.enabled = false;
     }
 }
