@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.AI;
 
@@ -7,103 +6,93 @@ public class SelectionManager : MonoBehaviour
 {
     public static SelectionManager Instance;
 
-    [Header("Click / Drag")]
+    [Header("Thresholds")]
     public float dragDistance = 10f;
     public float clickTime = 0.2f;
 
-    [Header("Move Marker")]
-    public GameObject moveMarker;
-    public float markerDuration = 1.2f;
-
-    private Vector2 mouseStart;
-    private float mouseDownTime;
-    private bool isDragging;
+    // ---- CLIC GAUCHE ----
+    private Vector2 leftStart;
+    private float leftDownTime;
+    private bool leftDragging;
     private Rect selectionRect;
 
+    // ---- CLIC DROIT ----
+    private Vector2 rightStart;
+    private float rightDownTime;
+    private bool rightDragging;
+
     private List<SelectableUnit> selectedUnits = new List<SelectableUnit>();
-    private Coroutine markerRoutine;
 
     void Awake()
     {
         Instance = this;
-        if (moveMarker)
-            moveMarker.SetActive(false);
     }
 
     void Update()
     {
+        HandleLeftMouse();
+        HandleRightMouse();
+    }
+
+    // ======================================================
+    // 🟩 CLIC GAUCHE — sélection / ordre
+    // ======================================================
+    void HandleLeftMouse()
+    {
+        // Mouse down
         if (Input.GetMouseButtonDown(0))
         {
-            mouseStart = Input.mousePosition;
-            mouseDownTime = Time.time;
-            isDragging = false;
+            leftStart = Input.mousePosition;
+            leftDownTime = Time.time;
+            leftDragging = false;
         }
 
+        // Mouse hold
         if (Input.GetMouseButton(0))
         {
-            if (Vector2.Distance(mouseStart, Input.mousePosition) > dragDistance ||
-                Time.time - mouseDownTime > clickTime)
-            {
-                isDragging = true;
-            }
+            float dist = Vector2.Distance(leftStart, Input.mousePosition);
+            float timeHeld = Time.time - leftDownTime;
+
+            if (dist > dragDistance || timeHeld > clickTime)
+                leftDragging = true;
         }
 
+        // Mouse up
         if (Input.GetMouseButtonUp(0))
         {
-            if (isDragging)
+            if (leftDragging)
                 SelectUnitsInRectangle();
             else
-                HandleSimpleClick();
+                HandleLeftClickOrder();
         }
     }
 
     void OnGUI()
     {
-        if (Input.GetMouseButton(0) && isDragging)
+        if (Input.GetMouseButton(0) && leftDragging)
         {
-            selectionRect = GetScreenRect(mouseStart, Input.mousePosition);
+            selectionRect = GetScreenRect(leftStart, Input.mousePosition);
             DrawSelectionRect(selectionRect);
         }
     }
 
-    // 🖱️ CLIC SIMPLE → DÉPLACEMENT
-    void HandleSimpleClick()
+    void HandleLeftClickOrder()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (selectedUnits.Count == 0)
+            return;
 
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit))
             return;
 
-        // 🔍 Récupère le player
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        SelectableUnit playerUnit = player ? player.GetComponent<SelectableUnit>() : null;
-
-        // 🟢 CAS 1 : aucune unité sélectionnée → le player seul bouge
-        if (selectedUnits.Count == 0)
-        {
-            if (playerUnit)
-            {
-                NavMeshAgent agent = playerUnit.GetComponent<NavMeshAgent>();
-                if (agent)
-                    agent.SetDestination(hit.point);
-            }
-
-            ShowMarker(hit.point);
-            return;
-        }
-
-        // 🟡 CAS 2 : des unités sont sélectionnées
         foreach (SelectableUnit unit in selectedUnits)
         {
-                NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
-                if (agent)
-                    agent.SetDestination(hit.point);
+            NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
+            if (agent)
+                agent.SetDestination(hit.point);
         }
-
-        ShowMarker(hit.point);
     }
 
-    // 🟩 SÉLECTION RECTANGLE
     void SelectUnitsInRectangle()
     {
         DeselectAll();
@@ -111,14 +100,72 @@ public class SelectionManager : MonoBehaviour
         foreach (SelectableUnit unit in FindObjectsByType<SelectableUnit>(FindObjectsSortMode.None))
         {
             Vector3 screenPos = Camera.main.WorldToScreenPoint(unit.transform.position);
-
             if (selectionRect.Contains(screenPos, true))
-            {
                 SelectUnit(unit);
-            }
         }
     }
 
+    // ======================================================
+    // 🟥 CLIC DROIT — désélection OU formation
+    // ======================================================
+    void HandleRightMouse()
+    {
+        // Mouse down
+        if (Input.GetMouseButtonDown(1))
+        {
+            rightStart = Input.mousePosition;
+            rightDownTime = Time.time;
+            rightDragging = false;
+        }
+
+        // Mouse hold
+        if (Input.GetMouseButton(1))
+        {
+            float dist = Vector2.Distance(rightStart, Input.mousePosition);
+            float timeHeld = Time.time - rightDownTime;
+
+            if (dist > dragDistance || timeHeld > clickTime)
+                rightDragging = true;
+        }
+
+        // Mouse up
+        if (Input.GetMouseButtonUp(1))
+        {
+            // 🟢 CLIC DROIT MAINTENU → FORMATION
+            if (rightDragging)
+                return;
+
+            // 🟡 CLIC DROIT COURT → DÉSÉLECTION
+            HandleRightClickDeselect();
+        }
+    }
+
+    void HandleRightClickDeselect()
+    {
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+        if (!Physics.Raycast(ray, out RaycastHit hit))
+        {
+            DeselectAll();
+            return;
+        }
+
+        SelectableUnit unit = hit.collider.GetComponentInParent<SelectableUnit>();
+
+        // Shift + clic droit sur une unité → désélection unitaire
+        if (unit && Input.GetKey(KeyCode.LeftShift))
+        {
+            DeselectUnit(unit);
+            return;
+        }
+
+        // clic droit court → désélection totale
+        DeselectAll();
+    }
+
+    // ======================================================
+    // 🧩 API PUBLIQUE
+    // ======================================================
     public void SelectUnit(SelectableUnit unit)
     {
         if (!selectedUnits.Contains(unit))
@@ -128,7 +175,16 @@ public class SelectionManager : MonoBehaviour
         }
     }
 
-    void DeselectAll()
+    public void DeselectUnit(SelectableUnit unit)
+    {
+        if (selectedUnits.Contains(unit))
+        {
+            unit.Deselect();
+            selectedUnits.Remove(unit);
+        }
+    }
+
+    public void DeselectAll()
     {
         foreach (SelectableUnit unit in selectedUnits)
             unit.Deselect();
@@ -136,27 +192,14 @@ public class SelectionManager : MonoBehaviour
         selectedUnits.Clear();
     }
 
-    // 🔵 MARKER
-    void ShowMarker(Vector3 pos)
+    public List<SelectableUnit> GetSelectedUnits()
     {
-        if (!moveMarker) return;
-
-        moveMarker.transform.position = pos + Vector3.up * 0.02f;
-        moveMarker.SetActive(true);
-
-        if (markerRoutine != null)
-            StopCoroutine(markerRoutine);
-
-        markerRoutine = StartCoroutine(HideMarker());
+        return selectedUnits;
     }
 
-    IEnumerator HideMarker()
-    {
-        yield return new WaitForSeconds(markerDuration);
-        moveMarker.SetActive(false);
-    }
-
+    // ======================================================
     // 🔧 UTILS
+    // ======================================================
     Rect GetScreenRect(Vector2 p1, Vector2 p2)
     {
         p1.y = Screen.height - p1.y;
@@ -180,10 +223,5 @@ public class SelectionManager : MonoBehaviour
         GUI.DrawTexture(new Rect(rect.xMin, rect.yMax, rect.width, 1), Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(rect.xMin, rect.yMin, 1, rect.height), Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(rect.xMax, rect.yMin, 1, rect.height), Texture2D.whiteTexture);
-    }
-
-    public List<SelectableUnit> GetSelectedUnits()
-    {
-        return selectedUnits;
     }
 }

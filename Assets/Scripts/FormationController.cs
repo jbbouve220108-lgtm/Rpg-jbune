@@ -7,26 +7,68 @@ public class FormationController : MonoBehaviour
     public GameObject formationMarkerPrefab;
     public float spacing = 2f;
 
-    private List<GameObject> markers = new List<GameObject>();
+    [Header("Thresholds")]
+    public float dragDistance = 10f;
+    public float clickTime = 0.2f;
+
+    private Vector2 rightStart;
+    private float rightDownTime;
+    private bool forming;
+
     private Vector3 startPoint;
-    private bool forming = false;
+    private List<GameObject> markers = new List<GameObject>();
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(1))
-            StartFormation();
-
-        if (Input.GetMouseButton(1) && forming)
-            UpdateFormationPreview();
-
-        if (Input.GetMouseButtonUp(1) && forming)
-            ConfirmFormation();
+        HandleRightMouse();
     }
 
-    void StartFormation()
+    void HandleRightMouse()
+    {
+        // Mouse down → on mémorise, MAIS on ne démarre PAS la formation
+        if (Input.GetMouseButtonDown(1))
+        {
+            rightStart = Input.mousePosition;
+            rightDownTime = Time.time;
+            forming = false;
+        }
+
+        // Mouse hold → on vérifie si on ENTRE en formation
+        if (Input.GetMouseButton(1))
+        {
+            float dist = Vector2.Distance(rightStart, Input.mousePosition);
+            float heldTime = Time.time - rightDownTime;
+
+            if (!forming && (dist > dragDistance || heldTime > clickTime))
+            {
+                TryStartFormation();
+            }
+
+            if (forming)
+            {
+                UpdateFormationPreview();
+            }
+        }
+
+        // Mouse up
+        if (Input.GetMouseButtonUp(1))
+        {
+            if (forming)
+            {
+                ConfirmFormation();
+                forming = false;
+            }
+        }
+    }
+
+    // =========================
+    // 🟢 DÉMARRAGE FORMATION
+    // =========================
+    void TryStartFormation()
     {
         var units = SelectionManager.Instance.GetSelectedUnits();
-        if (units.Count <= 1) return;
+        if (units.Count <= 1)
+            return;
 
         if (!TryGetMouseGround(out startPoint))
             return;
@@ -35,12 +77,18 @@ public class FormationController : MonoBehaviour
         CreateMarkers(units.Count);
     }
 
+    // =========================
+    // 🔵 PREVIEW FORMATION
+    // =========================
     void UpdateFormationPreview()
     {
         if (!TryGetMouseGround(out Vector3 current))
             return;
 
         Vector3 dir = (current - startPoint).normalized;
+        if (dir == Vector3.zero)
+            dir = Vector3.forward;
+
         Vector3 right = Vector3.Cross(Vector3.up, dir);
 
         var units = SelectionManager.Instance.GetSelectedUnits();
@@ -55,6 +103,9 @@ public class FormationController : MonoBehaviour
         }
     }
 
+    // =========================
+    // ✅ CONFIRMATION
+    // =========================
     void ConfirmFormation()
     {
         var units = SelectionManager.Instance.GetSelectedUnits();
@@ -67,9 +118,11 @@ public class FormationController : MonoBehaviour
         }
 
         ClearMarkers();
-        forming = false;
     }
 
+    // =========================
+    // 🧱 MARKERS
+    // =========================
     void CreateMarkers(int count)
     {
         ClearMarkers();
@@ -90,6 +143,9 @@ public class FormationController : MonoBehaviour
         markers.Clear();
     }
 
+    // =========================
+    // 🎯 SOL
+    // =========================
     bool TryGetMouseGround(out Vector3 point)
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
