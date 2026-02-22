@@ -14,6 +14,9 @@ public class HybridMovement : MonoBehaviour
 
     void Update()
     {
+    if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
+        return;
+
         HandleKeyboardMovement();
     }
 

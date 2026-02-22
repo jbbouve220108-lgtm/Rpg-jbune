@@ -20,8 +20,12 @@ public class FormationController : MonoBehaviour
 
     void Update()
     {
-        HandleRightMouse();
-    }
+    if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
+        return;
+    
+
+    HandleRightMouse();
+ }
 
     void HandleRightMouse()
     {

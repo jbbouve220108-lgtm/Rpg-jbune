@@ -27,6 +27,9 @@ public class TopDownEdgeCamera : MonoBehaviour
 
     void Update()
     {
+        if (MerchantUI.Instance != null && MerchantUI.Instance.IsOpen())
+            return;
+
         bool rotating = Input.GetMouseButton(2);
 
         if (!rotating)
