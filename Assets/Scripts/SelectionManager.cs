@@ -69,22 +69,38 @@ public class SelectionManager : MonoBehaviour
     // 🖱️ CLIC SIMPLE → DÉPLACEMENT
     void HandleSimpleClick()
     {
-        if (selectedUnits.Count == 0)
-            return;
-
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-        if (Physics.Raycast(ray, out RaycastHit hit))
+        if (!Physics.Raycast(ray, out RaycastHit hit))
+            return;
+
+        // 🔍 Récupère le player
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        SelectableUnit playerUnit = player ? player.GetComponent<SelectableUnit>() : null;
+
+        // 🟢 CAS 1 : aucune unité sélectionnée → le player seul bouge
+        if (selectedUnits.Count == 0)
         {
-            foreach (SelectableUnit unit in selectedUnits)
+            if (playerUnit)
             {
-                NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
+                NavMeshAgent agent = playerUnit.GetComponent<NavMeshAgent>();
                 if (agent)
                     agent.SetDestination(hit.point);
             }
 
             ShowMarker(hit.point);
+            return;
         }
+
+        // 🟡 CAS 2 : des unités sont sélectionnées
+        foreach (SelectableUnit unit in selectedUnits)
+        {
+                NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
+                if (agent)
+                    agent.SetDestination(hit.point);
+        }
+
+        ShowMarker(hit.point);
     }
 
     // 🟩 SÉLECTION RECTANGLE
