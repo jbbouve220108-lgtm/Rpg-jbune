@@ -3,6 +3,8 @@ using UnityEngine;
 public class SelectableUnit : MonoBehaviour
 {
     public bool isSelected = false;
+    public bool selectOnStart = false;
+
     private Renderer rend;
     private Color originalColor;
 
@@ -11,6 +13,14 @@ public class SelectableUnit : MonoBehaviour
         rend = GetComponentInChildren<Renderer>();
         if (rend)
             originalColor = rend.material.color;
+    }
+
+    void Start()
+    {
+        if (selectOnStart && SelectionManager.Instance != null)
+        {
+            SelectionManager.Instance.SelectUnit(this);
+        }
     }
 
     public void Select()

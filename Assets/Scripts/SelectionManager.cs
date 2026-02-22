@@ -1,44 +1,93 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.AI;
 
 public class SelectionManager : MonoBehaviour
 {
     public static SelectionManager Instance;
 
-    private Vector2 startPos;
+    [Header("Click / Drag")]
+    public float dragDistance = 10f;
+    public float clickTime = 0.2f;
+
+    [Header("Move Marker")]
+    public GameObject moveMarker;
+    public float markerDuration = 1.2f;
+
+    private Vector2 mouseStart;
+    private float mouseDownTime;
+    private bool isDragging;
     private Rect selectionRect;
 
     private List<SelectableUnit> selectedUnits = new List<SelectableUnit>();
+    private Coroutine markerRoutine;
 
     void Awake()
     {
         Instance = this;
+        if (moveMarker)
+            moveMarker.SetActive(false);
     }
 
     void Update()
     {
-        // Début sélection
         if (Input.GetMouseButtonDown(0))
         {
-            startPos = Input.mousePosition;
+            mouseStart = Input.mousePosition;
+            mouseDownTime = Time.time;
+            isDragging = false;
         }
 
-        // Fin sélection
+        if (Input.GetMouseButton(0))
+        {
+            if (Vector2.Distance(mouseStart, Input.mousePosition) > dragDistance ||
+                Time.time - mouseDownTime > clickTime)
+            {
+                isDragging = true;
+            }
+        }
+
         if (Input.GetMouseButtonUp(0))
         {
-            SelectUnitsInRectangle();
+            if (isDragging)
+                SelectUnitsInRectangle();
+            else
+                HandleSimpleClick();
         }
     }
 
     void OnGUI()
     {
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButton(0) && isDragging)
         {
-            selectionRect = GetScreenRect(startPos, Input.mousePosition);
+            selectionRect = GetScreenRect(mouseStart, Input.mousePosition);
             DrawSelectionRect(selectionRect);
         }
     }
 
+    // 🖱️ CLIC SIMPLE → DÉPLACEMENT
+    void HandleSimpleClick()
+    {
+        if (selectedUnits.Count == 0)
+            return;
+
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            foreach (SelectableUnit unit in selectedUnits)
+            {
+                NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
+                if (agent)
+                    agent.SetDestination(hit.point);
+            }
+
+            ShowMarker(hit.point);
+        }
+    }
+
+    // 🟩 SÉLECTION RECTANGLE
     void SelectUnitsInRectangle()
     {
         DeselectAll();
@@ -49,9 +98,17 @@ public class SelectionManager : MonoBehaviour
 
             if (selectionRect.Contains(screenPos, true))
             {
-                unit.Select();
-                selectedUnits.Add(unit);
+                SelectUnit(unit);
             }
+        }
+    }
+
+    public void SelectUnit(SelectableUnit unit)
+    {
+        if (!selectedUnits.Contains(unit))
+        {
+            unit.Select();
+            selectedUnits.Add(unit);
         }
     }
 
@@ -63,11 +120,32 @@ public class SelectionManager : MonoBehaviour
         selectedUnits.Clear();
     }
 
-    // 🔧 Utils
+    // 🔵 MARKER
+    void ShowMarker(Vector3 pos)
+    {
+        if (!moveMarker) return;
+
+        moveMarker.transform.position = pos + Vector3.up * 0.02f;
+        moveMarker.SetActive(true);
+
+        if (markerRoutine != null)
+            StopCoroutine(markerRoutine);
+
+        markerRoutine = StartCoroutine(HideMarker());
+    }
+
+    IEnumerator HideMarker()
+    {
+        yield return new WaitForSeconds(markerDuration);
+        moveMarker.SetActive(false);
+    }
+
+    // 🔧 UTILS
     Rect GetScreenRect(Vector2 p1, Vector2 p2)
     {
         p1.y = Screen.height - p1.y;
         p2.y = Screen.height - p2.y;
+
         return Rect.MinMaxRect(
             Mathf.Min(p1.x, p2.x),
             Mathf.Min(p1.y, p2.y),
@@ -80,6 +158,7 @@ public class SelectionManager : MonoBehaviour
     {
         GUI.color = new Color(0, 1, 0, 0.25f);
         GUI.DrawTexture(rect, Texture2D.whiteTexture);
+
         GUI.color = Color.green;
         GUI.DrawTexture(new Rect(rect.xMin, rect.yMin, rect.width, 1), Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(rect.xMin, rect.yMax, rect.width, 1), Texture2D.whiteTexture);
@@ -87,7 +166,6 @@ public class SelectionManager : MonoBehaviour
         GUI.DrawTexture(new Rect(rect.xMax, rect.yMin, 1, rect.height), Texture2D.whiteTexture);
     }
 
-    // 🔓 Accès futur (ordres)
     public List<SelectableUnit> GetSelectedUnits()
     {
         return selectedUnits;
