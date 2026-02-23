@@ -90,4 +90,9 @@ public class UICompanions : MonoBehaviour
         else
             current.StopFollow();
     }
+    public void ClosePanel()
+    {
+        if (panel != null)
+            panel.SetActive(false);
+    }
 }
