@@ -12,9 +12,9 @@ public class TopDownEdgeCamera : MonoBehaviour
     public float maxDistance = 50f;
 
     [Header("Tilt (mouse wheel drag)")]
-    public float tiltSpeed = 3f;
-    public float minTilt = 45f;
-    public float maxTilt = 90f;
+    public float tiltSpeed = 10f;
+    public float minTilt = 0f;
+    public float maxTilt = 180f;
 
     private Camera cam;
     private Transform camTransform;

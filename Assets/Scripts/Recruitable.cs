@@ -43,6 +43,13 @@ public class Recruitable : MonoBehaviour
             RenameUI.Instance.Open(unit);
         }
 
+        // 🔥 AJOUT COMPANION (SANS redéclarer unit)
+        Companion companion = GetComponent<Companion>();
+        if (companion != null && unit != null)
+        {
+            companion.Recruit(unit.unitName);
+        }
+
         this.enabled = false;
     }
 }
