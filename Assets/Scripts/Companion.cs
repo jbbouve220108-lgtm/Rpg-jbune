@@ -62,16 +62,14 @@ public class Companion : MonoBehaviour
         // ================= COLLIDER =================
         Collider col = GetComponent<Collider>();
         if (col != null)
-        {
             col.isTrigger = false;
-        }
 
         // ================= NAVMESH =================
         if (agent != null)
         {
             agent.enabled = isRecruited;
             agent.speed = followSpeed;
-            agent.acceleration = followSpeed * 4f; // accélération douce
+            agent.acceleration = followSpeed * 4f;
             agent.angularSpeed = 720f;
             agent.stoppingDistance = followTargetDistance - 0.1f;
         }
@@ -102,15 +100,10 @@ public class Companion : MonoBehaviour
         companionName = newName;
 
         if (rb != null)
-        {
             rb.constraints = RigidbodyConstraints.FreezeRotation;
-        }
 
         if (agent != null)
-        {
             agent.enabled = true;
-            agent.speed = followSpeed;
-        }
 
         CompanionManager.Instance.Register(this);
     }
@@ -128,53 +121,47 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // FOLLOW (UI)
+    // FOLLOW (appel UI)
     // =====================================================
     public void Follow()
     {
-        if (!isRecruited || agent == null || player == null)
+        if (!isRecruited)
             return;
 
         isFollowing = true;
-
-        if (!agent.enabled || !agent.isOnNavMesh)
-            return;
-
-        agent.isStopped = false;
     }
 
     public void StopFollow()
     {
         isFollowing = false;
-
-        if (agent != null && agent.enabled && agent.isOnNavMesh)
-        {
-            agent.ResetPath();
-        }
     }
 
     // =====================================================
-    // FOLLOW FLUIDE (PRIORITÉ DÉPLACEMENT > FOLLOW)
+    // LOGIQUE DE DÉPLACEMENT (PRIORITÉS STRICTES)
     // =====================================================
     void FixedUpdate()
     {
         if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh || player == null)
             return;
 
-        // 🔥 priorité à un ordre de déplacement manuel
-        if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance && !isFollowing)
+        // 🔥 1. ORDRE MANUEL / FORMATION ACTIF → PRIORITÉ ABSOLUE
+        if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
+        {
+            // Tant que l’ordre n’est pas fini, le follow NE FAIT RIEN
             return;
+        }
 
+        // 🔹 2. PAS EN FOLLOW → ON NE FAIT RIEN
         if (!isFollowing)
             return;
 
+        // 🔹 3. FOLLOW FLUIDE (agent idle)
         float dist = Vector3.Distance(transform.position, player.position);
 
-        // 🔒 Zone morte : on ne touche à rien → fluide
+        // Zone morte → on laisse l’agent tranquille
         if (Mathf.Abs(dist - followTargetDistance) <= followDeadZone)
             return;
 
-        // 🔹 Calcul du point de suivi
         Vector3 dir = (transform.position - player.position).normalized;
         Vector3 followPoint = player.position + dir * followTargetDistance;
 
