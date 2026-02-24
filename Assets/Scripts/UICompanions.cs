@@ -17,6 +17,18 @@ public class UICompanions : MonoBehaviour
             panel.SetActive(false);
     }
 
+    void Update()
+    {
+        // 🔹 Rafraîchissement léger si le panel est ouvert
+        if (panel != null && panel.activeSelf && current != null)
+        {
+            if (nameText != null && nameText.text != current.companionName)
+            {
+                nameText.text = current.companionName;
+            }
+        }
+    }
+
     // Appelé par le bouton HUD "Compagnons"
     public void TogglePanel()
     {
@@ -90,6 +102,7 @@ public class UICompanions : MonoBehaviour
         else
             current.StopFollow();
     }
+
     public void ClosePanel()
     {
         if (panel != null)

@@ -26,6 +26,7 @@ public class RenameUI : MonoBehaviour
 
         UIState.IsModalOpen = true;
 
+        // 🔹 Pré-remplissage avec le nom actuel
         nameInput.text = unit.unitName;
         panel.SetActive(true);
     }
@@ -35,6 +36,8 @@ public class RenameUI : MonoBehaviour
         if (currentUnit != null)
         {
             string newName = nameInput.text.Trim();
+
+            // 🔹 Application DU nom ici (source de vérité)
             if (!string.IsNullOrEmpty(newName))
             {
                 currentUnit.unitName = newName;

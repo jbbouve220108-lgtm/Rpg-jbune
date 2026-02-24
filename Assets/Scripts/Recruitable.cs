@@ -37,19 +37,23 @@ public class Recruitable : MonoBehaviour
         PlayerResources.Instance.gold -= recruitCost;
         recruited = true;
 
+        // 🔹 Récupération de l'Unit
         Unit unit = GetComponent<Unit>();
         if (unit != null)
         {
+            // 🔹 Ouverture du renommage (le nom peut changer APRÈS)
             RenameUI.Instance.Open(unit);
         }
 
-        // 🔥 AJOUT COMPANION (SANS redéclarer unit)
+        // 🔹 Récupération du Companion
         Companion companion = GetComponent<Companion>();
         if (companion != null && unit != null)
         {
+            // 🔹 Initialisation (le nom sera synchronisé ensuite)
             companion.Recruit(unit.unitName);
         }
 
+        // 🔹 Désactivation du composant une fois recruté
         this.enabled = false;
     }
 }

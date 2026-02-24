@@ -21,6 +21,9 @@ public class CompanionManager : MonoBehaviour
 
     public void Register(Companion companion)
     {
+        if (companion == null)
+            return;
+
         if (!companions.Contains(companion))
         {
             companions.Add(companion);
