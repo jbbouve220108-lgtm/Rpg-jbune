@@ -19,6 +19,10 @@ public class Companion : MonoBehaviour
     public float followSpeed = 3f;
     public float minFollowDistance = 1.8f;
 
+    [Header("Follow Distance")]
+    [Tooltip("Distance idéale de suivi pour éviter de coller le joueur")]
+    public float followTargetDistance = 2.5f;
+
     [Header("Interaction")]
     [Tooltip("Distance minimale pour interagir avec ce PNJ")]
     public float interactionDistance = 2.0f;
@@ -40,6 +44,7 @@ public class Companion : MonoBehaviour
 
             if (!isRecruited)
             {
+                // PNJ statique avant recrutement
                 rb.isKinematic = false;
                 rb.constraints =
                     RigidbodyConstraints.FreezePositionX |
@@ -104,6 +109,18 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
+    // SYNC NOM
+    // =====================================================
+    void LateUpdate()
+    {
+        if (!isRecruited || unit == null)
+            return;
+
+        if (companionName != unit.unitName)
+            companionName = unit.unitName;
+    }
+
+    // =====================================================
     // FOLLOW (appelé par UICompanions)
     // =====================================================
     public void Follow()
@@ -131,7 +148,7 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // UPDATE LOGIQUE
+    // UPDATE LOGIQUE (PRIORITÉS)
     // =====================================================
     void FixedUpdate()
     {
@@ -142,22 +159,38 @@ public class Companion : MonoBehaviour
         if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
             return;
 
+        // 🔹 PAS EN MODE FOLLOW
         if (!isFollowing)
             return;
 
         float dist = Vector3.Distance(transform.position, player.position);
-        if (dist <= minFollowDistance)
+
+        // 🔒 Zone de confort atteinte
+        if (dist <= followTargetDistance)
+        {
+            agent.ResetPath();
             return;
+        }
+
+        // 🔹 Point de suivi à distance (anti-collage)
+        Vector3 dir = (transform.position - player.position).normalized;
+        Vector3 followPoint = player.position + dir * followTargetDistance;
 
         agent.isStopped = false;
-        agent.SetDestination(player.position);
+        agent.SetDestination(followPoint);
     }
 
 #if UNITY_EDITOR
+    // =====================================================
+    // DEBUG VISUEL
+    // =====================================================
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, interactionDistance);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, followTargetDistance);
     }
 #endif
 }
