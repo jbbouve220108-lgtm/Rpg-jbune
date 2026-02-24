@@ -9,24 +9,27 @@ public class Companion : MonoBehaviour
 
     private Transform player;
 
-    // 🔹 AJOUTS MINIMAUX
+    // 🔹 Physique
     private Rigidbody rb;
     private Unit unit;
+
+    // 🔹 NOUVEAU : distance minimale de follow
+    [Header("Follow Settings")]
+    public float followSpeed = 3f;
+    public float minFollowDistance = 1.8f;
 
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
-        // 🔹 Récupération des composants physiques
         rb = GetComponent<Rigidbody>();
         unit = GetComponent<Unit>();
 
-        // 🔒 Sécurité : rigidbody requis
         if (rb != null)
         {
             rb.useGravity = true;
             rb.isKinematic = false;
-            rb.freezeRotation = true; // évite qu’il tombe sur le côté
+            rb.freezeRotation = true;
         }
     }
 
@@ -38,7 +41,7 @@ public class Companion : MonoBehaviour
         CompanionManager.Instance.Register(this);
     }
 
-    // 🔹 Synchronisation du nom (inchangé)
+    // 🔹 Synchronisation du nom
     void LateUpdate()
     {
         if (!isRecruited || unit == null)
@@ -65,18 +68,20 @@ public class Companion : MonoBehaviour
         if (!isFollowing || player == null || rb == null)
             return;
 
-        // 🔹 Direction horizontale uniquement (pas de vol)
-        Vector3 targetPosition = new Vector3(
-            player.position.x,
-            rb.position.y,
-            player.position.z
-        );
+        // 🔹 Positions horizontales (on ignore Y)
+        Vector3 companionPos = new Vector3(rb.position.x, 0f, rb.position.z);
+        Vector3 playerPos = new Vector3(player.position.x, 0f, player.position.z);
 
-        Vector3 direction = (targetPosition - rb.position).normalized;
+        float distance = Vector3.Distance(companionPos, playerPos);
 
-        // 🔹 Déplacement PHYSIQUE (respect gravité + collisions)
+        // 🔒 Distance minimale atteinte → on ne bouge plus
+        if (distance <= minFollowDistance)
+            return;
+
+        Vector3 direction = (playerPos - companionPos).normalized;
+
         rb.MovePosition(
-            rb.position + direction * 3f * Time.fixedDeltaTime
+            rb.position + direction * followSpeed * Time.fixedDeltaTime
         );
     }
 }
