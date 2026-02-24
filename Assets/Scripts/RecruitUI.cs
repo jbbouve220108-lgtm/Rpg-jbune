@@ -21,9 +21,13 @@ public class RecruitUI : MonoBehaviour
     void Awake()
     {
         Instance = this;
+
+        // 🔒 Sécurité au démarrage
         panel.SetActive(false);
+        UIState.IsModalOpen = false;
     }
 
+    // 👉 OUVERTURE UI (INCHANGÉE FONCTIONNELLEMENT)
     public void Open(Recruitable recruit)
     {
         if (recruit == null)
@@ -44,9 +48,17 @@ public class RecruitUI : MonoBehaviour
         panel.SetActive(true);
     }
 
+    // 👉 FERMETURE UI (AJOUT : restitution physique)
     public void Close()
     {
         panel.SetActive(false);
+
+        // 🔓 RESTITUTION DE L'ÉTAT PHYSIQUE DU PERSONNAGE
+        if (currentRecruit != null)
+        {
+            currentRecruit.RestorePhysics();
+        }
+
         currentRecruit = null;
 
         if (hudPanel != null)
@@ -55,15 +67,17 @@ public class RecruitUI : MonoBehaviour
         UIState.IsModalOpen = false;
     }
 
+    // 👉 Bouton "Recruter" (INCHANGÉ)
     public void ConfirmRecruit()
     {
         if (currentRecruit != null)
         {
             currentRecruit.Recruit();
-            UpdateGoldText(); // 🔁 refresh après recrutement
+            UpdateGoldText();
         }
     }
 
+    // 👉 Mise à jour de l’or (INCHANGÉ)
     void UpdateGoldText()
     {
         if (goldText != null && PlayerResources.Instance != null)

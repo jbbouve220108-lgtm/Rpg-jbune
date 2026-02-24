@@ -7,16 +7,41 @@ public class Recruitable : MonoBehaviour
 
     private bool recruited = false;
 
-    // 👉 Appelé quand on clique sur le PNJ
-    public void OnClicked()
+    // 🔒 Références physiques (AJOUT, pas remplacement)
+    private Rigidbody rb;
+    private bool wasKinematic;
+
+    void Awake()
     {
+        // 🔹 On récupère le Rigidbody existant (s’il existe)
+        rb = GetComponent<Rigidbody>();
+    }
+
+    // 👉 GESTION DU CLIC DIRECT SUR LE PERSONNAGE
+    void OnMouseDown()
+    {
+        // 🔒 Si une UI est déjà ouverte → on ignore
+        if (UIState.IsModalOpen)
+            return;
+
+        // 🔒 Si déjà recruté → on ignore
         if (recruited)
             return;
 
-        // 🟢 Ouvre UNIQUEMENT l'UI de recrutement
+        // 🔒 GEL PHYSIQUE TEMPORAIRE (CAUSE DU BUG)
+        if (rb != null)
+        {
+            wasKinematic = rb.isKinematic;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
+        }
+
+        // 🟢 Ouverture de l’UI de recrutement (INCHANGÉ)
         RecruitUI.Instance.Open(this);
     }
 
+    // 👉 Vérification des conditions de recrutement (INCHANGÉ)
     public bool CanRecruit()
     {
         if (recruited)
@@ -28,7 +53,7 @@ public class Recruitable : MonoBehaviour
         return PlayerResources.Instance.gold >= recruitCost;
     }
 
-    // 👉 Appelé UNIQUEMENT par le bouton "Recruter"
+    // 👉 Appelé UNIQUEMENT par le bouton "Recruter" (INCHANGÉ)
     public void Recruit()
     {
         if (!CanRecruit())
@@ -41,7 +66,6 @@ public class Recruitable : MonoBehaviour
         Unit unit = GetComponent<Unit>();
         if (unit != null)
         {
-            // 🔹 Ouverture du renommage (le nom peut changer APRÈS)
             RenameUI.Instance.Open(unit);
         }
 
@@ -49,11 +73,19 @@ public class Recruitable : MonoBehaviour
         Companion companion = GetComponent<Companion>();
         if (companion != null && unit != null)
         {
-            // 🔹 Initialisation (le nom sera synchronisé ensuite)
             companion.Recruit(unit.unitName);
         }
 
         // 🔹 Désactivation du composant une fois recruté
         this.enabled = false;
+    }
+
+    // 🔓 APPELÉ LORS DE LA FERMETURE DE L’UI
+    public void RestorePhysics()
+    {
+        if (rb != null)
+        {
+            rb.isKinematic = wasKinematic;
+        }
     }
 }

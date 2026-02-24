@@ -53,10 +53,24 @@ public class SelectionManager : MonoBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
+            // 🔒 Si UI ouverte → aucun ordre
+            if (UIState.IsModalOpen)
+            {
+                leftDragging = false;
+                return;
+            }
+
             if (leftDragging)
+            {
                 SelectUnitsInRectangle();
+            }
             else
-                IssueOrder();
+            {
+                // ✅ CLIC SIMPLE = ORDRE DE DÉPLACEMENT (COMME AVANT)
+                IssueMoveOrder();
+            }
+
+            leftDragging = false;
         }
     }
 
@@ -69,7 +83,26 @@ public class SelectionManager : MonoBehaviour
         }
     }
 
-    void IssueOrder()
+    void SelectUnitsInRectangle()
+    {
+        DeselectAll();
+
+        foreach (SelectableUnit unit in FindObjectsByType<SelectableUnit>(FindObjectsSortMode.None))
+        {
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(unit.transform.position);
+
+            if (screenPos.z < 0)
+                continue;
+
+            if (selectionRect.Contains(screenPos, true))
+            {
+                SelectUnit(unit);
+            }
+        }
+    }
+
+    // ================= MOVE ORDER =================
+    void IssueMoveOrder()
     {
         if (selectedUnits.Count == 0)
             return;
@@ -79,12 +112,11 @@ public class SelectionManager : MonoBehaviour
             return;
 
         foreach (SelectableUnit unit in selectedUnits)
-        { 
-            // 🔒 Bloquer les unités non recrutées
-            Companion companion = unit.GetComponent<Companion>();
+        {
+            // 🔒 Unité non recrutée → pas d’ordre
             Recruitable recruitable = unit.GetComponent<Recruitable>();
+            Companion companion = unit.GetComponent<Companion>();
 
-            // Cas : unité recrut able mais PAS encore recrutée → interdit
             if (recruitable != null && (companion == null || !companion.isRecruited))
                 continue;
 
@@ -93,18 +125,6 @@ public class SelectionManager : MonoBehaviour
             {
                 agent.SetDestination(hit.point);
             }
-        }
-    }
-
-    void SelectUnitsInRectangle()
-    {
-        DeselectAll();
-
-        foreach (SelectableUnit unit in FindObjectsByType<SelectableUnit>(FindObjectsSortMode.None))
-        {
-            Vector3 screenPos = Camera.main.WorldToScreenPoint(unit.transform.position);
-            if (selectionRect.Contains(screenPos, true))
-                SelectUnit(unit);
         }
     }
 
@@ -129,24 +149,12 @@ public class SelectionManager : MonoBehaviour
 
         if (Input.GetMouseButtonUp(1))
         {
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out RaycastHit hit))
-                {
-                    SelectableUnit unit = hit.collider.GetComponentInParent<SelectableUnit>();
-                    if (unit)
-                        DeselectUnit(unit);
-                }
-                return;
-            }
-
             if (!rightDragging)
                 DeselectAll();
         }
     }
 
-    // ================= API =================
+    // ================= API PUBLIQUE =================
     public List<SelectableUnit> GetSelectedUnits()
     {
         return selectedUnits;
@@ -158,15 +166,6 @@ public class SelectionManager : MonoBehaviour
         {
             unit.Select();
             selectedUnits.Add(unit);
-        }
-    }
-
-    public void DeselectUnit(SelectableUnit unit)
-    {
-        if (selectedUnits.Contains(unit))
-        {
-            unit.Deselect();
-            selectedUnits.Remove(unit);
         }
     }
 
