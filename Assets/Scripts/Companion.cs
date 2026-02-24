@@ -35,15 +35,11 @@ public class Companion : MonoBehaviour
         // ================= PHYSIQUE =================
         if (rb != null)
         {
-            rb.freezeRotation = true;
             rb.useGravity = true;
+            rb.freezeRotation = true;
 
             if (!isRecruited)
             {
-                // 🔒 AVANT RECRUTEMENT :
-                // - gravité OK
-                // - pas de déplacement latéral
-                // - collisions actives
                 rb.isKinematic = false;
                 rb.constraints =
                     RigidbodyConstraints.FreezePositionX |
@@ -57,7 +53,6 @@ public class Companion : MonoBehaviour
         }
 
         // ================= COLLIDER =================
-        // Le PNJ doit être SOLIDE avant recrutement
         Collider col = GetComponent<Collider>();
         if (col != null)
         {
@@ -95,7 +90,6 @@ public class Companion : MonoBehaviour
         isRecruited = true;
         companionName = newName;
 
-        // 🔓 APRÈS RECRUTEMENT : liberté totale
         if (rb != null)
         {
             rb.constraints = RigidbodyConstraints.FreezeRotation;
@@ -110,67 +104,56 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // SYNC NOM
-    // =====================================================
-    void LateUpdate()
-    {
-        if (!isRecruited || unit == null)
-            return;
-
-        if (companionName != unit.unitName)
-            companionName = unit.unitName;
-    }
-
-    // =====================================================
-    // FOLLOW
+    // FOLLOW (appelé par UICompanions)
     // =====================================================
     public void Follow()
     {
-        if (!isRecruited)
+        if (!isRecruited || agent == null || player == null)
             return;
 
         isFollowing = true;
+
+        if (!agent.enabled || !agent.isOnNavMesh)
+            return;
+
+        agent.isStopped = false;
+        agent.SetDestination(player.position);
     }
 
     public void StopFollow()
     {
         isFollowing = false;
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.ResetPath();
+        }
     }
 
+    // =====================================================
+    // UPDATE LOGIQUE
+    // =====================================================
     void FixedUpdate()
     {
-        if (!isRecruited)
+        if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh || player == null)
             return;
 
-        // 🔥 PRIORITÉ AU NAVMESH
-        if (agent != null && agent.enabled &&
-            agent.remainingDistance > agent.stoppingDistance)
-        {
-            isFollowing = false;
-            return;
-        }
-
-        if (!isFollowing || player == null || rb == null)
+        // 🔥 PRIORITÉ À UN ORDRE DE DÉPLACEMENT
+        if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
             return;
 
-        Vector3 selfXZ = new Vector3(rb.position.x, 0f, rb.position.z);
-        Vector3 playerXZ = new Vector3(player.position.x, 0f, player.position.z);
+        if (!isFollowing)
+            return;
 
-        float dist = Vector3.Distance(selfXZ, playerXZ);
+        float dist = Vector3.Distance(transform.position, player.position);
         if (dist <= minFollowDistance)
             return;
 
-        Vector3 dir = (playerXZ - selfXZ).normalized;
-
-        rb.MovePosition(
-            rb.position + dir * followSpeed * Time.fixedDeltaTime
-        );
+        agent.isStopped = false;
+        agent.SetDestination(player.position);
     }
 
 #if UNITY_EDITOR
-    // =====================================================
-    // DEBUG VISUEL
-    // =====================================================
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
