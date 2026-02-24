@@ -30,14 +30,28 @@ public class Companion : MonoBehaviour
 
         if (rb != null)
         {
-            rb.useGravity = true;
             rb.freezeRotation = true;
-            rb.isKinematic = false;
+            rb.useGravity = true;
+
+            if (!isRecruited)
+            {
+                // 🔒 AVANT RECRUTEMENT :
+                // gravité OK, déplacements bloqués
+                rb.isKinematic = false;
+                rb.constraints =
+                    RigidbodyConstraints.FreezePositionX |
+                    RigidbodyConstraints.FreezePositionZ |
+                    RigidbodyConstraints.FreezeRotation;
+            }
+            else
+            {
+                rb.constraints = RigidbodyConstraints.FreezeRotation;
+            }
         }
 
         if (agent != null)
         {
-            agent.enabled = true; // 🔥 TOUJOURS ACTIF
+            agent.enabled = isRecruited;
         }
     }
 
@@ -45,6 +59,17 @@ public class Companion : MonoBehaviour
     {
         isRecruited = true;
         companionName = newName;
+
+        // 🔓 APRÈS RECRUTEMENT : liberté totale
+        if (rb != null)
+        {
+            rb.constraints = RigidbodyConstraints.FreezeRotation;
+        }
+
+        if (agent != null)
+        {
+            agent.enabled = true;
+        }
 
         CompanionManager.Instance.Register(this);
     }
@@ -60,34 +85,30 @@ public class Companion : MonoBehaviour
 
     public void Follow()
     {
-        isFollowing = true;
+        if (!isRecruited)
+            return;
 
-        if (rb != null)
-            rb.isKinematic = false;
+        isFollowing = true;
     }
 
     public void StopFollow()
     {
         isFollowing = false;
-
-        if (rb != null)
-            rb.isKinematic = true;
     }
 
     void FixedUpdate()
     {
-        // 🔥 SI le NavMeshAgent a un ordre → il est prioritaire
-        if (agent != null && agent.remainingDistance > agent.stoppingDistance)
+        if (!isRecruited)
+            return;
+
+        // 🔥 NavMeshAgent prioritaire
+        if (agent != null && agent.enabled &&
+            agent.remainingDistance > agent.stoppingDistance)
         {
             isFollowing = false;
-
-            if (rb != null && !rb.isKinematic)
-                rb.isKinematic = true;
-
             return;
         }
 
-        // 🔹 FOLLOW PHYSIQUE
         if (!isFollowing || player == null || rb == null)
             return;
 
