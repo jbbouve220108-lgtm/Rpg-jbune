@@ -19,6 +19,10 @@ public class Companion : MonoBehaviour
     public float followSpeed = 3f;
     public float minFollowDistance = 1.8f;
 
+    [Header("Interaction")]
+    [Tooltip("Distance minimale pour interagir avec ce PNJ")]
+    public float interactionDistance = 2.0f;
+
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
@@ -28,6 +32,7 @@ public class Companion : MonoBehaviour
         selectable = GetComponent<SelectableUnit>();
         agent = GetComponent<NavMeshAgent>();
 
+        // ================= PHYSIQUE =================
         if (rb != null)
         {
             rb.freezeRotation = true;
@@ -36,7 +41,9 @@ public class Companion : MonoBehaviour
             if (!isRecruited)
             {
                 // 🔒 AVANT RECRUTEMENT :
-                // gravité OK, déplacements bloqués
+                // - gravité OK
+                // - pas de déplacement latéral
+                // - collisions actives
                 rb.isKinematic = false;
                 rb.constraints =
                     RigidbodyConstraints.FreezePositionX |
@@ -49,12 +56,40 @@ public class Companion : MonoBehaviour
             }
         }
 
+        // ================= COLLIDER =================
+        // Le PNJ doit être SOLIDE avant recrutement
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            col.isTrigger = false;
+        }
+
+        // ================= NAVMESH =================
         if (agent != null)
         {
             agent.enabled = isRecruited;
         }
     }
 
+    // =====================================================
+    // INTERACTION
+    // =====================================================
+    public bool IsPlayerInInteractionRange()
+    {
+        if (player == null)
+            return false;
+
+        float dist = Vector3.Distance(
+            new Vector3(transform.position.x, 0f, transform.position.z),
+            new Vector3(player.position.x, 0f, player.position.z)
+        );
+
+        return dist <= interactionDistance;
+    }
+
+    // =====================================================
+    // RECRUITMENT
+    // =====================================================
     public void Recruit(string newName)
     {
         isRecruited = true;
@@ -74,6 +109,9 @@ public class Companion : MonoBehaviour
         CompanionManager.Instance.Register(this);
     }
 
+    // =====================================================
+    // SYNC NOM
+    // =====================================================
     void LateUpdate()
     {
         if (!isRecruited || unit == null)
@@ -83,6 +121,9 @@ public class Companion : MonoBehaviour
             companionName = unit.unitName;
     }
 
+    // =====================================================
+    // FOLLOW
+    // =====================================================
     public void Follow()
     {
         if (!isRecruited)
@@ -101,7 +142,7 @@ public class Companion : MonoBehaviour
         if (!isRecruited)
             return;
 
-        // 🔥 NavMeshAgent prioritaire
+        // 🔥 PRIORITÉ AU NAVMESH
         if (agent != null && agent.enabled &&
             agent.remainingDistance > agent.stoppingDistance)
         {
@@ -125,4 +166,15 @@ public class Companion : MonoBehaviour
             rb.position + dir * followSpeed * Time.fixedDeltaTime
         );
     }
+
+#if UNITY_EDITOR
+    // =====================================================
+    // DEBUG VISUEL
+    // =====================================================
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, interactionDistance);
+    }
+#endif
 }

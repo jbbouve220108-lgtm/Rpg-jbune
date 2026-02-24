@@ -7,7 +7,7 @@ public class Recruitable : MonoBehaviour
 
     private bool recruited = false;
 
-    // 🔒 Références physiques (AJOUT, pas remplacement)
+    // 🔒 Références physiques (EXISTANT)
     private Rigidbody rb;
     private bool wasKinematic;
 
@@ -28,7 +28,21 @@ public class Recruitable : MonoBehaviour
         if (recruited)
             return;
 
-        // 🔒 GEL PHYSIQUE TEMPORAIRE (CAUSE DU BUG)
+        // ================= AJOUT DEMANDÉ =================
+        // 🔴 Vérification de la distance par rapport au joueur
+        Companion companion = GetComponent<Companion>();
+        if (companion != null && !companion.IsPlayerInInteractionRange())
+        {
+            // Feedback visuel : trop loin
+            if (InteractionFeedback.Instance != null)
+            {
+                InteractionFeedback.Instance.ShowTooFar();
+            }
+            return; // ⛔ ON N’OUVRE PAS L’UI
+        }
+        // =================================================
+
+        // 🔒 GEL PHYSIQUE TEMPORAIRE (EXISTANT)
         if (rb != null)
         {
             wasKinematic = rb.isKinematic;
@@ -62,25 +76,25 @@ public class Recruitable : MonoBehaviour
         PlayerResources.Instance.gold -= recruitCost;
         recruited = true;
 
-        // 🔹 Récupération de l'Unit
+        // 🔹 Récupération de l'Unit (INCHANGÉ)
         Unit unit = GetComponent<Unit>();
         if (unit != null)
         {
             RenameUI.Instance.Open(unit);
         }
 
-        // 🔹 Récupération du Companion
+        // 🔹 Récupération du Companion (INCHANGÉ)
         Companion companion = GetComponent<Companion>();
         if (companion != null && unit != null)
         {
             companion.Recruit(unit.unitName);
         }
 
-        // 🔹 Désactivation du composant une fois recruté
+        // 🔹 Désactivation du composant une fois recruté (INCHANGÉ)
         this.enabled = false;
     }
 
-    // 🔓 APPELÉ LORS DE LA FERMETURE DE L’UI
+    // 🔓 APPELÉ LORS DE LA FERMETURE DE L’UI (INCHANGÉ)
     public void RestorePhysics()
     {
         if (rb != null)

@@ -4,6 +4,7 @@ using UnityEngine.AI;
 public class HybridMovement : MonoBehaviour
 {
     public float keyboardSpeed = 4f;
+    public float blockCheckDistance = 0.8f; // distance de blocage devant le joueur
 
     private NavMeshAgent agent;
 
@@ -23,6 +24,14 @@ public class HybridMovement : MonoBehaviour
                 agent.ResetPath();
 
             Vector3 move = new Vector3(h, 0, v).normalized;
+
+            // =====================================================
+            // 🔒 AJOUT : BLOCAGE SI PNJ DEVANT
+            // =====================================================
+            if (IsBlockedByRecruitable(move))
+                return;
+            // =====================================================
+
             agent.Move(move * keyboardSpeed * Time.deltaTime);
 
             if (move != Vector3.zero)
@@ -35,5 +44,23 @@ public class HybridMovement : MonoBehaviour
                 );
             }
         }
+    }
+
+    // =====================================================
+    // 🔒 DÉTECTION SIMPLE D'UN PNJ DEVANT LE JOUEUR
+    // =====================================================
+    bool IsBlockedByRecruitable(Vector3 moveDir)
+    {
+        Ray ray = new Ray(transform.position + Vector3.up * 0.5f, moveDir);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, blockCheckDistance))
+        {
+            if (hit.collider.GetComponent<Recruitable>() != null)
+            {
+                return true; // on bloque le déplacement
+            }
+        }
+
+        return false;
     }
 }
