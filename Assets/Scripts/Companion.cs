@@ -137,17 +137,25 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // LOGIQUE DE DÉPLACEMENT (PRIORITÉS STRICTES)
+    // 🔹 AJOUT MINIMAL : APPELÉ PAR LA FORMATION
+    // =====================================================
+    public void OnFormationOrder()
+    {
+        // 👉 Une formation coupe simplement le follow
+        isFollowing = false;
+    }
+
+    // =====================================================
+    // LOGIQUE DE DÉPLACEMENT (INCHANGÉE)
     // =====================================================
     void FixedUpdate()
     {
         if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh || player == null)
             return;
 
-        // 🔥 1. ORDRE MANUEL / FORMATION ACTIF → PRIORITÉ ABSOLUE
+        // 🔥 1. ORDRE MANUEL / FORMATION ACTIF → PRIORITÉ
         if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
         {
-            // Tant que l’ordre n’est pas fini, le follow NE FAIT RIEN
             return;
         }
 
@@ -155,10 +163,9 @@ public class Companion : MonoBehaviour
         if (!isFollowing)
             return;
 
-        // 🔹 3. FOLLOW FLUIDE (agent idle)
+        // 🔹 3. FOLLOW FLUIDE
         float dist = Vector3.Distance(transform.position, player.position);
 
-        // Zone morte → on laisse l’agent tranquille
         if (Mathf.Abs(dist - followTargetDistance) <= followDeadZone)
             return;
 

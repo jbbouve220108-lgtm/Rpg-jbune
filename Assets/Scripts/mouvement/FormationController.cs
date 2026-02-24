@@ -20,12 +20,9 @@ public class FormationController : MonoBehaviour
 
     void Update()
     {
-        // =====================================================
-        // 🔒 AJOUT : BLOCAGE TOTAL SI UNE UI EST OUVERTE
-        // =====================================================
+        // 🔒 Blocage global si une UI est ouverte (existant)
         if (UIState.IsModalOpen)
             return;
-        // =====================================================
 
         HandleRightMouse();
     }
@@ -104,6 +101,16 @@ public class FormationController : MonoBehaviour
 
         for (int i = 0; i < units.Count; i++)
         {
+            // =====================================================
+            // 🔹 AJOUT DEMANDÉ : COUPURE DU FOLLOW
+            // =====================================================
+            Companion companion = units[i].GetComponent<Companion>();
+            if (companion != null)
+            {
+                companion.OnFormationOrder(); // 🔥 clé
+            }
+            // =====================================================
+
             NavMeshAgent agent = units[i].GetComponent<NavMeshAgent>();
             if (agent)
                 agent.SetDestination(markers[i].transform.position);
