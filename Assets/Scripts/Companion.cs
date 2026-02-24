@@ -20,8 +20,11 @@ public class Companion : MonoBehaviour
     public float minFollowDistance = 1.8f;
 
     [Header("Follow Distance")]
-    [Tooltip("Distance idéale de suivi pour éviter de coller le joueur")]
+    [Tooltip("Distance idéale de suivi")]
     public float followTargetDistance = 2.5f;
+
+    [Tooltip("Zone morte autour de la distance cible (anti-saccades)")]
+    public float followDeadZone = 0.4f;
 
     [Header("Interaction")]
     [Tooltip("Distance minimale pour interagir avec ce PNJ")]
@@ -44,7 +47,6 @@ public class Companion : MonoBehaviour
 
             if (!isRecruited)
             {
-                // PNJ statique avant recrutement
                 rb.isKinematic = false;
                 rb.constraints =
                     RigidbodyConstraints.FreezePositionX |
@@ -68,6 +70,10 @@ public class Companion : MonoBehaviour
         if (agent != null)
         {
             agent.enabled = isRecruited;
+            agent.speed = followSpeed;
+            agent.acceleration = followSpeed * 4f; // accélération douce
+            agent.angularSpeed = 720f;
+            agent.stoppingDistance = followTargetDistance - 0.1f;
         }
     }
 
@@ -103,6 +109,7 @@ public class Companion : MonoBehaviour
         if (agent != null)
         {
             agent.enabled = true;
+            agent.speed = followSpeed;
         }
 
         CompanionManager.Instance.Register(this);
@@ -121,7 +128,7 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // FOLLOW (appelé par UICompanions)
+    // FOLLOW (UI)
     // =====================================================
     public void Follow()
     {
@@ -134,7 +141,6 @@ public class Companion : MonoBehaviour
             return;
 
         agent.isStopped = false;
-        agent.SetDestination(player.position);
     }
 
     public void StopFollow()
@@ -148,31 +154,27 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // UPDATE LOGIQUE (PRIORITÉS)
+    // FOLLOW FLUIDE (PRIORITÉ DÉPLACEMENT > FOLLOW)
     // =====================================================
     void FixedUpdate()
     {
         if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh || player == null)
             return;
 
-        // 🔥 PRIORITÉ À UN ORDRE DE DÉPLACEMENT
-        if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
+        // 🔥 priorité à un ordre de déplacement manuel
+        if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance && !isFollowing)
             return;
 
-        // 🔹 PAS EN MODE FOLLOW
         if (!isFollowing)
             return;
 
         float dist = Vector3.Distance(transform.position, player.position);
 
-        // 🔒 Zone de confort atteinte
-        if (dist <= followTargetDistance)
-        {
-            agent.ResetPath();
+        // 🔒 Zone morte : on ne touche à rien → fluide
+        if (Mathf.Abs(dist - followTargetDistance) <= followDeadZone)
             return;
-        }
 
-        // 🔹 Point de suivi à distance (anti-collage)
+        // 🔹 Calcul du point de suivi
         Vector3 dir = (transform.position - player.position).normalized;
         Vector3 followPoint = player.position + dir * followTargetDistance;
 
@@ -181,9 +183,6 @@ public class Companion : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    // =====================================================
-    // DEBUG VISUEL
-    // =====================================================
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
@@ -191,6 +190,10 @@ public class Companion : MonoBehaviour
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, followTargetDistance);
+
+        Gizmos.color = Color.gray;
+        Gizmos.DrawWireSphere(transform.position, followTargetDistance + followDeadZone);
+        Gizmos.DrawWireSphere(transform.position, followTargetDistance - followDeadZone);
     }
 #endif
 }
