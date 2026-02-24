@@ -79,10 +79,20 @@ public class SelectionManager : MonoBehaviour
             return;
 
         foreach (SelectableUnit unit in selectedUnits)
-        {
+        { 
+            // 🔒 Bloquer les unités non recrutées
+            Companion companion = unit.GetComponent<Companion>();
+            Recruitable recruitable = unit.GetComponent<Recruitable>();
+
+            // Cas : unité recrut able mais PAS encore recrutée → interdit
+            if (recruitable != null && (companion == null || !companion.isRecruited))
+                continue;
+
             NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
-            if (agent)
+            if (agent != null && agent.enabled)
+            {
                 agent.SetDestination(hit.point);
+            }
         }
     }
 

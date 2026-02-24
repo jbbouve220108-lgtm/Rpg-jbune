@@ -7,21 +7,27 @@ public class UnitClick : MonoBehaviour
         if (!Input.GetMouseButtonDown(0))
             return;
 
-        // 🔒 Si une UI est ouverte, on ignore
-        if (UIState.IsModalOpen)
-            return;
-
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit hit))
+
+        // 🔥 On récupère TOUS les colliders sous la souris
+        RaycastHit[] hits = Physics.RaycastAll(ray, 1000f);
+
+        if (hits.Length == 0)
             return;
 
-        // 🔹 Recrutement uniquement si Recruitable
-        Recruitable recruit = hit.collider.GetComponentInParent<Recruitable>();
-        if (recruit == null)
-            return;
+        // 🔥 On trie par distance (le plus proche d'abord)
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
-        // 🔹 Sécurité : pas de recrutement si déjà recruté
-        // (le script Recruitable gère aussi, mais double protection)
-        recruit.OnClicked();
+        // 🔥 On cherche le PREMIER Recruitable valide
+        foreach (RaycastHit hit in hits)
+        {
+            Recruitable recruit = hit.collider.GetComponent<Recruitable>();
+
+            if (recruit != null)
+            {
+                recruit.OnClicked();
+                return;
+            }
+        }
     }
 }
