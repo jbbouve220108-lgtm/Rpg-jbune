@@ -28,19 +28,19 @@ public class Recruitable : MonoBehaviour
         if (recruited)
             return;
 
-        // ================= AJOUT DEMANDÉ =================
-        // 🔴 Vérification de la distance par rapport au joueur
+        // =====================================================
+        // 🔴 AJOUT DEMANDÉ : BLOQUAGE SI TROP LOIN
+        // =====================================================
         Companion companion = GetComponent<Companion>();
         if (companion != null && !companion.IsPlayerInInteractionRange())
         {
-            // Feedback visuel : trop loin
             if (InteractionFeedback.Instance != null)
             {
                 InteractionFeedback.Instance.ShowTooFar();
             }
-            return; // ⛔ ON N’OUVRE PAS L’UI
+            return; // ⛔ L’UI NE S’OUVRE PAS
         }
-        // =================================================
+        // =====================================================
 
         // 🔒 GEL PHYSIQUE TEMPORAIRE (EXISTANT)
         if (rb != null)

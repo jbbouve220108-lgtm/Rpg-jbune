@@ -27,11 +27,25 @@ public class RecruitUI : MonoBehaviour
         UIState.IsModalOpen = false;
     }
 
-    // 👉 OUVERTURE UI (INCHANGÉE FONCTIONNELLEMENT)
+    // 👉 OUVERTURE UI (SÉCURISÉE)
     public void Open(Recruitable recruit)
     {
         if (recruit == null)
             return;
+
+        // =====================================================
+        // 🔴 AJOUT DEMANDÉ : BLOQUAGE SI TROP LOIN
+        // =====================================================
+        Companion companion = recruit.GetComponent<Companion>();
+        if (companion != null && !companion.IsPlayerInInteractionRange())
+        {
+            if (InteractionFeedback.Instance != null)
+            {
+                InteractionFeedback.Instance.ShowTooFar();
+            }
+            return; // ⛔ UI JAMAIS OUVERTE
+        }
+        // =====================================================
 
         currentRecruit = recruit;
 
@@ -48,7 +62,7 @@ public class RecruitUI : MonoBehaviour
         panel.SetActive(true);
     }
 
-    // 👉 FERMETURE UI (AJOUT : restitution physique)
+    // 👉 FERMETURE UI (INCHANGÉE)
     public void Close()
     {
         panel.SetActive(false);
