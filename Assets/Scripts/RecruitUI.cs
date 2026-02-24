@@ -22,19 +22,21 @@ public class RecruitUI : MonoBehaviour
     {
         Instance = this;
 
-        // 🔒 Sécurité au démarrage
-        panel.SetActive(false);
-        UIState.IsModalOpen = false;
+        // 🔒 Sécurité au démarrage (comportement existant)
+        if (panel != null)
+            panel.SetActive(false);
     }
 
-    // 👉 OUVERTURE UI (SÉCURISÉE)
+    // =====================================================
+    // 👉 OUVERTURE UI (BLOQUE LE MONDE)
+    // =====================================================
     public void Open(Recruitable recruit)
     {
         if (recruit == null)
             return;
 
         // =====================================================
-        // 🔴 AJOUT DEMANDÉ : BLOQUAGE SI TROP LOIN
+        // 🔴 BLOCAGE SI TROP LOIN (LOGIQUE EXISTANTE)
         // =====================================================
         Companion companion = recruit.GetComponent<Companion>();
         if (companion != null && !companion.IsPlayerInInteractionRange())
@@ -43,31 +45,40 @@ public class RecruitUI : MonoBehaviour
             {
                 InteractionFeedback.Instance.ShowTooFar();
             }
-            return; // ⛔ UI JAMAIS OUVERTE
+            return; // ⛔ UI jamais ouverte
         }
         // =====================================================
 
         currentRecruit = recruit;
 
-        UIState.IsModalOpen = true;
+        // 🔒 BLOCAGE CENTRALISÉ DES INPUTS MONDE
+        UIState.OpenModal();
 
         if (hudPanel != null)
             hudPanel.SetActive(false);
 
         Unit unit = recruit.GetComponent<Unit>();
-        nameText.text = unit != null ? unit.unitName : "Unknown";
-        costText.text = $"Cost: {recruit.recruitCost} gold";
+        if (nameText != null)
+            nameText.text = unit != null ? unit.unitName : "Unknown";
+
+        if (costText != null)
+            costText.text = $"Cost: {recruit.recruitCost} gold";
 
         UpdateGoldText();
-        panel.SetActive(true);
+
+        if (panel != null)
+            panel.SetActive(true);
     }
 
-    // 👉 FERMETURE UI (INCHANGÉE)
+    // =====================================================
+    // 👉 FERMETURE UI (DÉBLOQUE LE MONDE)
+    // =====================================================
     public void Close()
     {
-        panel.SetActive(false);
+        if (panel != null)
+            panel.SetActive(false);
 
-        // 🔓 RESTITUTION DE L'ÉTAT PHYSIQUE DU PERSONNAGE
+        // 🔓 RESTITUTION DE L'ÉTAT PHYSIQUE DU PERSONNAGE (EXISTANT)
         if (currentRecruit != null)
         {
             currentRecruit.RestorePhysics();
@@ -78,10 +89,13 @@ public class RecruitUI : MonoBehaviour
         if (hudPanel != null)
             hudPanel.SetActive(true);
 
-        UIState.IsModalOpen = false;
+        // 🔓 RESTITUTION DES INPUTS MONDE
+        UIState.CloseModal();
     }
 
-    // 👉 Bouton "Recruter" (INCHANGÉ)
+    // =====================================================
+    // 👉 CONFIRMATION DU RECRUTEMENT (INCHANGÉ)
+    // =====================================================
     public void ConfirmRecruit()
     {
         if (currentRecruit != null)
@@ -91,7 +105,9 @@ public class RecruitUI : MonoBehaviour
         }
     }
 
-    // 👉 Mise à jour de l’or (INCHANGÉ)
+    // =====================================================
+    // 👉 MISE À JOUR DE L’OR (INCHANGÉ)
+    // =====================================================
     void UpdateGoldText()
     {
         if (goldText != null && PlayerResources.Instance != null)

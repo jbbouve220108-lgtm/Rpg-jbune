@@ -20,6 +20,13 @@ public class FormationController : MonoBehaviour
 
     void Update()
     {
+        // =====================================================
+        // 🔒 AJOUT : BLOCAGE TOTAL SI UNE UI EST OUVERTE
+        // =====================================================
+        if (UIState.IsModalOpen)
+            return;
+        // =====================================================
+
         HandleRightMouse();
     }
 

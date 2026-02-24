@@ -29,6 +29,9 @@ public class UICompanions : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // 👉 TOGGLE DU PANEL (BLOQUE / DÉBLOQUE LE MONDE)
+    // =====================================================
     // Appelé par le bouton HUD "Compagnons"
     public void TogglePanel()
     {
@@ -36,12 +39,25 @@ public class UICompanions : MonoBehaviour
             return;
 
         bool isActive = panel.activeSelf;
+
         panel.SetActive(!isActive);
 
         if (!isActive)
+        {
+            // 🔒 UI ouverte → blocage monde
+            UIState.OpenModal();
             LoadFirstCompanion();
+        }
+        else
+        {
+            // 🔓 UI fermée → restitution monde
+            UIState.CloseModal();
+        }
     }
 
+    // =====================================================
+    // 👉 CHARGEMENT DU PREMIER COMPAGNON (INCHANGÉ)
+    // =====================================================
     void LoadFirstCompanion()
     {
         // 🔒 Sécurité : CompanionManager absent
@@ -69,14 +85,22 @@ public class UICompanions : MonoBehaviour
         }
 
         // ✅ Companion valide
-        nameText.text = current.companionName;
-        followToggle.interactable = true;
-        followToggle.isOn = current.isFollowing;
+        if (nameText != null)
+            nameText.text = current.companionName;
 
-        followToggle.onValueChanged.RemoveAllListeners();
-        followToggle.onValueChanged.AddListener(OnFollowChanged);
+        if (followToggle != null)
+        {
+            followToggle.interactable = true;
+            followToggle.isOn = current.isFollowing;
+
+            followToggle.onValueChanged.RemoveAllListeners();
+            followToggle.onValueChanged.AddListener(OnFollowChanged);
+        }
     }
 
+    // =====================================================
+    // 👉 ÉTAT VIDE (INCHANGÉ)
+    // =====================================================
     void ShowEmptyState(string message)
     {
         current = null;
@@ -92,6 +116,9 @@ public class UICompanions : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // 👉 TOGGLE FOLLOW (INCHANGÉ)
+    // =====================================================
     void OnFollowChanged(bool follow)
     {
         if (current == null)
@@ -103,9 +130,15 @@ public class UICompanions : MonoBehaviour
             current.StopFollow();
     }
 
+    // =====================================================
+    // 👉 FERMETURE EXPLICITE DU PANEL
+    // =====================================================
     public void ClosePanel()
     {
         if (panel != null)
             panel.SetActive(false);
+
+        // 🔓 Sécurité : restitution monde si fermeture externe
+        UIState.CloseModal();
     }
 }

@@ -19,9 +19,14 @@ public class MerchantUI : MonoBehaviour
     void Awake()
     {
         Instance = this;
-        panel.SetActive(false);
+
+        if (panel != null)
+            panel.SetActive(false);
     }
 
+    // =====================================================
+    // 👉 OUVERTURE UI MARCHAND (BLOQUE LE MONDE)
+    // =====================================================
     public void Open(Merchant merchant)
     {
         if (merchant == null)
@@ -29,26 +34,38 @@ public class MerchantUI : MonoBehaviour
 
         currentMerchant = merchant;
 
-        UIState.IsModalOpen = true;
+        // 🔒 BLOCAGE CENTRALISÉ DES INPUTS MONDE
+        UIState.OpenModal();
 
         if (hudPanel != null)
             hudPanel.SetActive(false);
 
         UpdateGoldText();
-        panel.SetActive(true);
+
+        if (panel != null)
+            panel.SetActive(true);
     }
 
+    // =====================================================
+    // 👉 FERMETURE UI MARCHAND (DÉBLOQUE LE MONDE)
+    // =====================================================
     public void Close()
     {
         currentMerchant = null;
-        panel.SetActive(false);
+
+        if (panel != null)
+            panel.SetActive(false);
 
         if (hudPanel != null)
             hudPanel.SetActive(true);
 
-        UIState.IsModalOpen = false;
+        // 🔓 RESTITUTION DES INPUTS MONDE
+        UIState.CloseModal();
     }
 
+    // =====================================================
+    // 👉 ACHAT (INCHANGÉ)
+    // =====================================================
     public void BuyFood()
     {
         if (currentMerchant != null)
@@ -58,6 +75,9 @@ public class MerchantUI : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // 👉 MISE À JOUR DE L’OR (INCHANGÉ)
+    // =====================================================
     void UpdateGoldText()
     {
         if (goldText != null && PlayerResources.Instance != null)

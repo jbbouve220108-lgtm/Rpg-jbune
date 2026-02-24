@@ -1,7 +1,14 @@
-using UnityEngine;
-
 public static class UIState
 {
-    // TRUE = une UI modale est ouverte (marchand, recrutement, etc.)
-    public static bool IsModalOpen = false;
+    public static bool IsModalOpen { get; private set; }
+
+    public static void OpenModal()
+    {
+        IsModalOpen = true;
+    }
+
+    public static void CloseModal()
+    {
+        IsModalOpen = false;
+    }
 }

@@ -14,9 +14,14 @@ public class RenameUI : MonoBehaviour
     void Awake()
     {
         Instance = this;
-        panel.SetActive(false);
+
+        if (panel != null)
+            panel.SetActive(false);
     }
 
+    // =====================================================
+    // 👉 OUVERTURE UI (BLOQUE LE MONDE)
+    // =====================================================
     public void Open(Unit unit)
     {
         if (unit == null)
@@ -24,13 +29,20 @@ public class RenameUI : MonoBehaviour
 
         currentUnit = unit;
 
-        UIState.IsModalOpen = true;
+        // 🔒 BLOCAGE CENTRALISÉ DES INPUTS MONDE
+        UIState.OpenModal();
 
         // 🔹 Pré-remplissage avec le nom actuel
-        nameInput.text = unit.unitName;
-        panel.SetActive(true);
+        if (nameInput != null)
+            nameInput.text = unit.unitName;
+
+        if (panel != null)
+            panel.SetActive(true);
     }
 
+    // =====================================================
+    // 👉 CONFIRMATION (INCHANGÉE)
+    // =====================================================
     public void Confirm()
     {
         if (currentUnit != null)
@@ -44,7 +56,7 @@ public class RenameUI : MonoBehaviour
             }
         }
 
-        // 🔴 FERMER AUSSI LA FENÊTRE DE RECRUTEMENT
+        // 🔴 FERMER AUSSI LA FENÊTRE DE RECRUTEMENT (COMPORTEMENT EXISTANT)
         if (RecruitUI.Instance != null)
         {
             RecruitUI.Instance.Close();
@@ -53,10 +65,17 @@ public class RenameUI : MonoBehaviour
         Close();
     }
 
+    // =====================================================
+    // 👉 FERMETURE UI (DÉBLOQUE LE MONDE)
+    // =====================================================
     public void Close()
     {
         currentUnit = null;
-        panel.SetActive(false);
-        UIState.IsModalOpen = false;
+
+        if (panel != null)
+            panel.SetActive(false);
+
+        // 🔓 RESTITUTION DES INPUTS MONDE
+        UIState.CloseModal();
     }
 }

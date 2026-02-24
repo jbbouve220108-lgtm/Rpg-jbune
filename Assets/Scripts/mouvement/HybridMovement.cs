@@ -15,6 +15,13 @@ public class HybridMovement : MonoBehaviour
 
     void Update()
     {
+        // =====================================================
+        // 🔒 AJOUT : BLOCAGE TOTAL DU DÉPLACEMENT SI UI OUVERTE
+        // =====================================================
+        if (UIState.IsModalOpen)
+            return;
+        // =====================================================
+
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 
@@ -26,7 +33,7 @@ public class HybridMovement : MonoBehaviour
             Vector3 move = new Vector3(h, 0, v).normalized;
 
             // =====================================================
-            // 🔒 AJOUT : BLOCAGE SI PNJ DEVANT
+            // 🔒 BLOCAGE SI PNJ DEVANT (LOGIQUE EXISTANTE)
             // =====================================================
             if (IsBlockedByRecruitable(move))
                 return;
@@ -47,7 +54,7 @@ public class HybridMovement : MonoBehaviour
     }
 
     // =====================================================
-    // 🔒 DÉTECTION SIMPLE D'UN PNJ DEVANT LE JOUEUR
+    // 🔒 DÉTECTION SIMPLE D'UN PNJ DEVANT LE JOUEUR (INCHANGÉ)
     // =====================================================
     bool IsBlockedByRecruitable(Vector3 moveDir)
     {

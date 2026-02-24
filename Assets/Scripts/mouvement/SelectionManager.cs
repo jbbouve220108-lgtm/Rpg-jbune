@@ -28,6 +28,13 @@ public class SelectionManager : MonoBehaviour
 
     void Update()
     {
+        // =====================================================
+        // 🔒 AJOUT : BLOCAGE TOTAL SI UNE UI EST OUVERTE
+        // =====================================================
+        if (UIState.IsModalOpen)
+            return;
+        // =====================================================
+
         HandleLeftMouse();
         HandleRightMouse();
     }
@@ -53,20 +60,13 @@ public class SelectionManager : MonoBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
-            // 🔒 Si UI ouverte → aucun ordre
-            if (UIState.IsModalOpen)
-            {
-                leftDragging = false;
-                return;
-            }
-
             if (leftDragging)
             {
                 SelectUnitsInRectangle();
             }
             else
             {
-                // ✅ CLIC SIMPLE = ORDRE DE DÉPLACEMENT (COMME AVANT)
+                // ✅ CLIC SIMPLE = ORDRE DE DÉPLACEMENT
                 IssueMoveOrder();
             }
 
