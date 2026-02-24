@@ -31,12 +31,14 @@ public class Companion : MonoBehaviour
         if (rb != null)
         {
             rb.useGravity = true;
-            rb.isKinematic = false;
             rb.freezeRotation = true;
+            rb.isKinematic = false;
         }
 
         if (agent != null)
-            agent.enabled = false;
+        {
+            agent.enabled = true; // 🔥 TOUJOURS ACTIF
+        }
     }
 
     public void Recruit(string newName)
@@ -59,45 +61,38 @@ public class Companion : MonoBehaviour
     public void Follow()
     {
         isFollowing = true;
-        if (agent != null)
-            agent.enabled = false;
+
+        if (rb != null)
+            rb.isKinematic = false;
     }
 
     public void StopFollow()
     {
         isFollowing = false;
-        if (agent != null)
-            agent.enabled = true;
-    }
 
-    void Update()
-    {
-        // 🔹 Clic droit RTS quand sélectionné
-        if (selectable != null && selectable.isSelected && Input.GetMouseButtonDown(1))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out RaycastHit hit))
-                return;
-
-            // 👉 Clic droit sur le joueur = FOLLOW
-            if (hit.collider.CompareTag("Player"))
-            {
-                Follow();
-                return;
-            }
-
-            // 👉 Sinon : arrêt du follow (ordre classique)
-            StopFollow();
-        }
+        if (rb != null)
+            rb.isKinematic = true;
     }
 
     void FixedUpdate()
     {
+        // 🔥 SI le NavMeshAgent a un ordre → il est prioritaire
+        if (agent != null && agent.remainingDistance > agent.stoppingDistance)
+        {
+            isFollowing = false;
+
+            if (rb != null && !rb.isKinematic)
+                rb.isKinematic = true;
+
+            return;
+        }
+
+        // 🔹 FOLLOW PHYSIQUE
         if (!isFollowing || player == null || rb == null)
             return;
 
-        Vector3 selfXZ = new Vector3(rb.position.x, 0, rb.position.z);
-        Vector3 playerXZ = new Vector3(player.position.x, 0, player.position.z);
+        Vector3 selfXZ = new Vector3(rb.position.x, 0f, rb.position.z);
+        Vector3 playerXZ = new Vector3(player.position.x, 0f, player.position.z);
 
         float dist = Vector3.Distance(selfXZ, playerXZ);
         if (dist <= minFollowDistance)
