@@ -51,7 +51,7 @@ public class UICompanions : MonoBehaviour
     }
 
     // =====================================================
-    // NAVIGATION ENTRE COMPAGNONS
+    // NAVIGATION ENTRE COMPAGNONS (CIRCULAIRE)
     // =====================================================
 
     public void NextCompanion()
@@ -60,7 +60,7 @@ public class UICompanions : MonoBehaviour
             return;
 
         currentIndex++;
-        ClampIndex();
+        WrapIndex();
         RefreshUI();
     }
 
@@ -70,8 +70,18 @@ public class UICompanions : MonoBehaviour
             return;
 
         currentIndex--;
-        ClampIndex();
+        WrapIndex();
         RefreshUI();
+    }
+
+    void WrapIndex()
+    {
+        int count = CompanionManager.Instance.companions.Count;
+
+        if (currentIndex < 0)
+            currentIndex = count - 1;
+        else if (currentIndex >= count)
+            currentIndex = 0;
     }
 
     // =====================================================
@@ -103,7 +113,7 @@ public class UICompanions : MonoBehaviour
             return;
         }
 
-        ClampIndex();
+        WrapIndex();
 
         currentCompanion = CompanionManager.Instance.companions[currentIndex];
 
@@ -117,12 +127,12 @@ public class UICompanions : MonoBehaviour
         if (nameText != null)
             nameText.text = currentCompanion.companionName;
 
-        // 🔹 Toggle Follow (IMPORTANT : interactable remis à true)
+        // 🔹 Toggle Follow
         if (followToggle != null)
         {
             followToggle.onValueChanged.RemoveAllListeners();
 
-            followToggle.interactable = true; // ✅ CORRECTION DU BUG
+            followToggle.interactable = true;
             followToggle.isOn = currentCompanion.isFollowing;
 
             followToggle.onValueChanged.AddListener(OnFollowToggleChanged);
@@ -136,14 +146,12 @@ public class UICompanions : MonoBehaviour
         if (stateText == null || currentCompanion == null)
             return;
 
-        // Following explicite
         if (currentCompanion.isFollowing)
         {
             stateText.text = "Following";
             return;
         }
 
-        // Ordre actif / formation
         NavMeshAgent agent = currentCompanion.GetComponent<NavMeshAgent>();
         if (agent != null && agent.hasPath)
         {
@@ -181,14 +189,5 @@ public class UICompanions : MonoBehaviour
         return CompanionManager.Instance != null &&
                CompanionManager.Instance.companions != null &&
                CompanionManager.Instance.companions.Count > 0;
-    }
-
-    void ClampIndex()
-    {
-        if (currentIndex < 0)
-            currentIndex = 0;
-
-        if (currentIndex >= CompanionManager.Instance.companions.Count)
-            currentIndex = CompanionManager.Instance.companions.Count - 1;
     }
 }
