@@ -29,7 +29,7 @@ public class Recruitable : MonoBehaviour
             return;
 
         // =====================================================
-        // 🔴 AJOUT DEMANDÉ : BLOQUAGE SI TROP LOIN
+        // 🔴 BLOQUAGE SI TROP LOIN (EXISTANT)
         // =====================================================
         Companion companion = GetComponent<Companion>();
         if (companion != null && !companion.IsPlayerInInteractionRange())
@@ -67,7 +67,7 @@ public class Recruitable : MonoBehaviour
         return PlayerResources.Instance.gold >= recruitCost;
     }
 
-    // 👉 Appelé UNIQUEMENT par le bouton "Recruter" (INCHANGÉ)
+    // 👉 Appelé UNIQUEMENT par le bouton "Recruter"
     public void Recruit()
     {
         if (!CanRecruit())
@@ -89,6 +89,15 @@ public class Recruitable : MonoBehaviour
         {
             companion.Recruit(unit.unitName);
         }
+
+        // =====================================================
+        // 🔥 AJOUT DEMANDÉ : INVALIDATION DE LA SÉLECTION
+        // =====================================================
+        if (SelectionManager.Instance != null)
+        {
+            SelectionManager.Instance.DeselectAll();
+        }
+        // =====================================================
 
         // 🔹 Désactivation du composant une fois recruté (INCHANGÉ)
         this.enabled = false;
