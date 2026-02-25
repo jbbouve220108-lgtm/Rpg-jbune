@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Text;
 
 public class RecruitUI : MonoBehaviour
 {
@@ -9,6 +10,10 @@ public class RecruitUI : MonoBehaviour
     public GameObject panel;
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI costText;
+
+    [Header("Stats UI")]
+    [Tooltip("Text field used to display character stats")]
+    public TextMeshProUGUI statsText;
 
     [Header("HUD")]
     public GameObject hudPanel;
@@ -65,6 +70,7 @@ public class RecruitUI : MonoBehaviour
             costText.text = $"Cost: {recruit.recruitCost} gold";
 
         UpdateGoldText();
+        RefreshStats();
 
         if (panel != null)
             panel.SetActive(true);
@@ -114,5 +120,64 @@ public class RecruitUI : MonoBehaviour
         {
             goldText.text = $"Gold: {PlayerResources.Instance.gold}";
         }
+    }
+
+    // =====================================================
+    // 👉 AFFICHAGE DES STATS (LECTURE SEULE)
+    // =====================================================
+    void RefreshStats()
+    {
+        if (statsText == null || currentRecruit == null)
+            return;
+
+        CharacterStats stats = currentRecruit.GetComponent<CharacterStats>();
+        if (stats == null)
+        {
+            statsText.text = "";
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        AppendStat(sb, "Force", stats.force);
+        AppendStat(sb, "Athlétisme", stats.athletisme);
+        AppendStat(sb, "Résistance", stats.resistance);
+        AppendStat(sb, "Précision", stats.precision);
+
+        sb.AppendLine();
+
+        AppendStat(sb, "Commandement", stats.commandement);
+        AppendStat(sb, "Charisme", stats.charisme);
+        AppendStat(sb, "Chance", stats.chance);
+
+        sb.AppendLine();
+
+        AppendStat(sb, "Commerce", stats.commerce);
+        AppendStat(sb, "Artisanat", stats.artisanat);
+        AppendStat(sb, "Bûcheron", stats.bucheron);
+        AppendStat(sb, "Mineur", stats.mineur);
+
+        statsText.text = sb.ToString();
+    }
+
+    void AppendStat(StringBuilder sb, string label, Stat stat)
+    {
+        if (stat == null)
+            return;
+
+        int bars = Mathf.RoundToInt(stat.value / 10f);
+        bars = Mathf.Clamp(bars, 0, 10);
+
+        sb.Append(label.PadRight(14));
+        sb.Append(" ");
+
+        for (int i = 0; i < 10; i++)
+        {
+            sb.Append(i < bars ? "█" : "░");
+        }
+
+        sb.Append(" ");
+        sb.Append(stat.value);
+        sb.AppendLine();
     }
 }
