@@ -31,7 +31,6 @@ public class UICompanions : MonoBehaviour
     // =====================================================
     // OUVERTURE / FERMETURE
     // =====================================================
-
     public void TogglePanel()
     {
         if (panel == null)
@@ -53,7 +52,6 @@ public class UICompanions : MonoBehaviour
     // =====================================================
     // NAVIGATION ENTRE COMPAGNONS (CIRCULAIRE)
     // =====================================================
-
     public void NextCompanion()
     {
         if (!HasCompanions())
@@ -87,7 +85,6 @@ public class UICompanions : MonoBehaviour
     // =====================================================
     // FOLLOW (INDIVIDUEL)
     // =====================================================
-
     void OnFollowToggleChanged(bool follow)
     {
         if (currentCompanion == null)
@@ -104,7 +101,6 @@ public class UICompanions : MonoBehaviour
     // =====================================================
     // RAFRAÎCHISSEMENT UI
     // =====================================================
-
     void RefreshUI()
     {
         if (!HasCompanions())
@@ -141,25 +137,37 @@ public class UICompanions : MonoBehaviour
         RefreshState();
     }
 
+    // =====================================================
+    // ÉTAT / STATS (PRIORITÉS RESPECTÉES)
+    // =====================================================
     void RefreshState()
     {
         if (stateText == null || currentCompanion == null)
             return;
 
-        if (currentCompanion.isFollowing)
+        switch (currentCompanion.CurrentState)
         {
-            stateText.text = "Following";
-            return;
-        }
+            case CompanionState.Dying:
+                stateText.text = "En train de mourir";
+                break;
 
-        NavMeshAgent agent = currentCompanion.GetComponent<NavMeshAgent>();
-        if (agent != null && agent.hasPath)
-        {
-            stateText.text = "In Formation";
-            return;
-        }
+            case CompanionState.Starving:
+                stateText.text = "Famine";
+                break;
 
-        stateText.text = "Idle";
+            case CompanionState.Hungry:
+                stateText.text = "À faim";
+                break;
+
+            case CompanionState.Following:
+                stateText.text = "Following";
+                break;
+
+            case CompanionState.Idle:
+            default:
+                stateText.text = "Idle";
+                break;
+        }
     }
 
     void ShowEmptyState()
@@ -183,7 +191,6 @@ public class UICompanions : MonoBehaviour
     // =====================================================
     // UTILS
     // =====================================================
-
     bool HasCompanions()
     {
         return CompanionManager.Instance != null &&

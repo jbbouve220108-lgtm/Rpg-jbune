@@ -6,21 +6,22 @@ using UnityEngine.AI;
 public class FoodConsumption : MonoBehaviour
 {
     [Header("Food Tick")]
-    [Tooltip("Time (seconds) between each food tick")]
-    public float tickInterval = 60f;   // ⏱️ ex: 60 secondes
+    public float tickInterval = 60f;
 
     [Tooltip("Base food consumed per companion")]
-    public float baseFoodPerCompanion = 1f;   // 🍖 1 nourriture par compagnon
+    public float baseFoodPerCompanion = 1f;
 
     [Tooltip("Additional food consumed if companion is moving")]
-    public float movementFoodBonus = 0.2f;    // 🏃 petit bonus si déplacement
-
-    [Header("Starvation")]
-    [Tooltip("Life lost per companion when food is at 0")]
-    public float lifeLostWhenStarving = 2f;
+    public float movementFoodBonus = 0.2f;
 
     [Tooltip("Minimal speed to consider a companion as moving")]
     public float movementThreshold = 0.1f;
+
+    [Header("Starvation")]
+    public float lifeLostWhenStarving = 2f;
+
+    // 🔒 Mémoire des compagnons déjà affamés
+    private HashSet<Companion> hungryCompanions = new HashSet<Companion>();
 
     void Start()
     {
@@ -33,61 +34,106 @@ public class FoodConsumption : MonoBehaviour
         {
             yield return new WaitForSeconds(tickInterval);
 
-            if (PlayerResources.Instance == null)
-                continue;
-
-            if (CompanionManager.Instance == null ||
-                CompanionManager.Instance.companions == null ||
-                CompanionManager.Instance.companions.Count == 0)
+            if (PlayerResources.Instance == null ||
+                CompanionManager.Instance == null)
                 continue;
 
             List<Companion> companions = CompanionManager.Instance.companions;
+            if (companions == null || companions.Count == 0)
+                continue;
 
-            float totalFoodNeeded = 0f;
+            int availableFood = PlayerResources.Instance.food;
 
             // ============================
-            // CALCUL DE CONSOMMATION
+            // PRIORITÉ JOUEUR
+            // ============================
+            if (availableFood > 0)
+                availableFood -= 1; // 1 nourriture réservée au joueur
+
+            // ============================
+            // CALCUL DES BESOINS COMPAGNONS
+            // ============================
+            Dictionary<Companion, int> companionNeeds = new Dictionary<Companion, int>();
+
+            foreach (Companion companion in companions)
+            {
+                if (companion == null)
+                    continue;
+
+                float need = baseFoodPerCompanion;
+
+                NavMeshAgent agent = companion.GetComponent<NavMeshAgent>();
+                if (agent != null && agent.velocity.magnitude > movementThreshold)
+                    need += movementFoodBonus;
+
+                companionNeeds[companion] = Mathf.CeilToInt(need);
+            }
+
+            // ============================
+            // DISTRIBUTION ALÉATOIRE
+            // ============================
+            List<Companion> shuffled = new List<Companion>(companions);
+            for (int i = 0; i < shuffled.Count; i++)
+            {
+                Companion temp = shuffled[i];
+                int randomIndex = Random.Range(i, shuffled.Count);
+                shuffled[i] = shuffled[randomIndex];
+                shuffled[randomIndex] = temp;
+            }
+
+            HashSet<Companion> fedCompanions = new HashSet<Companion>();
+
+            foreach (Companion companion in shuffled)
+            {
+                if (!companionNeeds.ContainsKey(companion))
+                    continue;
+
+                int need = companionNeeds[companion];
+                if (availableFood >= need)
+                {
+                    availableFood -= need;
+                    fedCompanions.Add(companion);
+                }
+            }
+
+            // ============================
+            // APPLICATION DES ÉTATS
             // ============================
             foreach (Companion companion in companions)
             {
                 if (companion == null)
                     continue;
 
-                totalFoodNeeded += baseFoodPerCompanion;
+                // ☠️ Priorité absolue
+                if (companion.CurrentState == CompanionState.Dying)
+                    continue;
 
-                NavMeshAgent agent = companion.GetComponent<NavMeshAgent>();
-                if (agent != null && agent.velocity.magnitude > movementThreshold)
+                if (fedCompanions.Contains(companion))
                 {
-                    totalFoodNeeded += movementFoodBonus;
+                    hungryCompanions.Remove(companion);
+                    continue; // retour Idle / Following via Companion
                 }
-            }
 
-            int foodToConsume = Mathf.CeilToInt(totalFoodNeeded);
-
-            // ============================
-            // CAS NORMAL : NOURRITURE OK
-            // ============================
-            if (PlayerResources.Instance.food >= foodToConsume)
-            {
-                PlayerResources.Instance.SpendFood(foodToConsume);
-                continue;
-            }
-
-            // ============================
-            // CAS FAMINE : NOURRITURE = 0
-            // ============================
-            if (PlayerResources.Instance.food <= 0)
-            {
-                foreach (Companion companion in companions)
+                // ❌ PAS MANGÉ
+                if (!hungryCompanions.Contains(companion))
                 {
-                    if (companion == null)
-                        continue;
+                    hungryCompanions.Add(companion);
+                    companion.SetState(CompanionState.Hungry);
+                }
+                else
+                {
+                    companion.SetState(CompanionState.Starving);
 
                     Health h = companion.GetComponent<Health>();
                     if (h != null)
                         h.TakeDamage(lifeLostWhenStarving);
                 }
             }
+
+            // ============================
+            // MISE À JOUR NOURRITURE JOUEUR
+            // ============================
+            PlayerResources.Instance.food = Mathf.Max(0, availableFood);
         }
     }
 }

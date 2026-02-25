@@ -1,6 +1,18 @@
 using UnityEngine;
 using UnityEngine.AI;
 
+// =====================================================
+// ÉTATS DU COMPAGNON (UI / GAMEPLAY)
+// =====================================================
+public enum CompanionState
+{
+    Idle,
+    Following,
+    Hungry,     // À faim (1er tick sans nourriture)
+    Starving,   // Famine (perte de vie)
+    Dying       // En train de mourir (priorité absolue)
+}
+
 public class Companion : MonoBehaviour
 {
     public string companionName;
@@ -30,6 +42,18 @@ public class Companion : MonoBehaviour
     [Tooltip("Distance minimale pour interagir avec ce PNJ")]
     public float interactionDistance = 2.0f;
 
+    // =====================================================
+    // STATE
+    // =====================================================
+    [Header("State")]
+    [SerializeField]
+    private CompanionState currentState = CompanionState.Idle;
+
+    public CompanionState CurrentState => currentState;
+
+    // =====================================================
+    // UNITY
+    // =====================================================
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
@@ -109,7 +133,7 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // SYNC NOM
+    // SYNC NOM + ÉTAT NORMAL
     // =====================================================
     void LateUpdate()
     {
@@ -118,6 +142,17 @@ public class Companion : MonoBehaviour
 
         if (companionName != unit.unitName)
             companionName = unit.unitName;
+
+        // 🔒 États critiques PRIORITAIRES (non écrasables)
+        if (currentState == CompanionState.Hungry ||
+            currentState == CompanionState.Starving ||
+            currentState == CompanionState.Dying)
+            return;
+
+        if (isFollowing)
+            currentState = CompanionState.Following;
+        else
+            currentState = CompanionState.Idle;
     }
 
     // =====================================================
@@ -174,6 +209,22 @@ public class Companion : MonoBehaviour
 
         agent.isStopped = false;
         agent.SetDestination(followPoint);
+    }
+
+    // =====================================================
+    // STATE API (utilisé par FoodConsumption)
+    // =====================================================
+    public void SetState(CompanionState newState)
+    {
+        if (currentState == CompanionState.Dying)
+            return;
+
+        currentState = newState;
+    }
+
+    public void SetDyingState()
+    {
+        currentState = CompanionState.Dying;
     }
 
 #if UNITY_EDITOR
