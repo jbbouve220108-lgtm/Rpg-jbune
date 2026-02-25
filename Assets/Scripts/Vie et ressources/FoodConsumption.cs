@@ -6,7 +6,8 @@ using UnityEngine.AI;
 public class FoodConsumption : MonoBehaviour
 {
     [Header("Food Tick")]
-    public float tickInterval = 60f;
+    [Tooltip("Time (seconds) between each food distribution tick")]
+    public float foodTickInterval = 60f;
 
     [Tooltip("Base food consumed per companion")]
     public float baseFoodPerCompanion = 1f;
@@ -17,22 +18,30 @@ public class FoodConsumption : MonoBehaviour
     [Tooltip("Minimal speed to consider a companion as moving")]
     public float movementThreshold = 0.1f;
 
-    [Header("Starvation")]
+    [Header("Starvation Tick")]
+    [Tooltip("Time (seconds) between each life loss when starving")]
+    public float starvationTickInterval = 8f;
+
+    [Tooltip("Life lost per starvation tick")]
     public float lifeLostWhenStarving = 2f;
 
-    // 🔒 Mémoire des compagnons déjà affamés
+    // 🔒 Mémoire des compagnons affamés (1er tick)
     private HashSet<Companion> hungryCompanions = new HashSet<Companion>();
 
     void Start()
     {
         StartCoroutine(FoodRoutine());
+        StartCoroutine(StarvationRoutine());
     }
 
+    // =====================================================
+    // 🍖 FOOD TICK
+    // =====================================================
     IEnumerator FoodRoutine()
     {
         while (true)
         {
-            yield return new WaitForSeconds(tickInterval);
+            yield return new WaitForSeconds(foodTickInterval);
 
             if (PlayerResources.Instance == null ||
                 CompanionManager.Instance == null)
@@ -48,12 +57,12 @@ public class FoodConsumption : MonoBehaviour
             // PRIORITÉ JOUEUR
             // ============================
             if (availableFood > 0)
-                availableFood -= 1; // 1 nourriture réservée au joueur
+                availableFood -= 1;
 
             // ============================
-            // CALCUL DES BESOINS COMPAGNONS
+            // CALCUL DES BESOINS
             // ============================
-            Dictionary<Companion, int> companionNeeds = new Dictionary<Companion, int>();
+            Dictionary<Companion, int> needs = new Dictionary<Companion, int>();
 
             foreach (Companion companion in companions)
             {
@@ -66,7 +75,7 @@ public class FoodConsumption : MonoBehaviour
                 if (agent != null && agent.velocity.magnitude > movementThreshold)
                     need += movementFoodBonus;
 
-                companionNeeds[companion] = Mathf.CeilToInt(need);
+                needs[companion] = Mathf.CeilToInt(need);
             }
 
             // ============================
@@ -75,24 +84,24 @@ public class FoodConsumption : MonoBehaviour
             List<Companion> shuffled = new List<Companion>(companions);
             for (int i = 0; i < shuffled.Count; i++)
             {
-                Companion temp = shuffled[i];
-                int randomIndex = Random.Range(i, shuffled.Count);
-                shuffled[i] = shuffled[randomIndex];
-                shuffled[randomIndex] = temp;
+                Companion tmp = shuffled[i];
+                int r = Random.Range(i, shuffled.Count);
+                shuffled[i] = shuffled[r];
+                shuffled[r] = tmp;
             }
 
-            HashSet<Companion> fedCompanions = new HashSet<Companion>();
+            HashSet<Companion> fed = new HashSet<Companion>();
 
             foreach (Companion companion in shuffled)
             {
-                if (!companionNeeds.ContainsKey(companion))
+                if (!needs.ContainsKey(companion))
                     continue;
 
-                int need = companionNeeds[companion];
+                int need = needs[companion];
                 if (availableFood >= need)
                 {
                     availableFood -= need;
-                    fedCompanions.Add(companion);
+                    fed.Add(companion);
                 }
             }
 
@@ -104,17 +113,15 @@ public class FoodConsumption : MonoBehaviour
                 if (companion == null)
                     continue;
 
-                // ☠️ Priorité absolue
                 if (companion.CurrentState == CompanionState.Dying)
                     continue;
 
-                if (fedCompanions.Contains(companion))
+                if (fed.Contains(companion))
                 {
                     hungryCompanions.Remove(companion);
-                    continue; // retour Idle / Following via Companion
+                    continue;
                 }
 
-                // ❌ PAS MANGÉ
                 if (!hungryCompanions.Contains(companion))
                 {
                     hungryCompanions.Add(companion);
@@ -123,17 +130,37 @@ public class FoodConsumption : MonoBehaviour
                 else
                 {
                     companion.SetState(CompanionState.Starving);
-
-                    Health h = companion.GetComponent<Health>();
-                    if (h != null)
-                        h.TakeDamage(lifeLostWhenStarving);
                 }
             }
 
-            // ============================
-            // MISE À JOUR NOURRITURE JOUEUR
-            // ============================
             PlayerResources.Instance.food = Mathf.Max(0, availableFood);
+        }
+    }
+
+    // =====================================================
+    // ☠️ STARVATION DAMAGE TICK
+    // =====================================================
+    IEnumerator StarvationRoutine()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(starvationTickInterval);
+
+            if (CompanionManager.Instance == null)
+                continue;
+
+            foreach (Companion companion in CompanionManager.Instance.companions)
+            {
+                if (companion == null)
+                    continue;
+
+                if (companion.CurrentState != CompanionState.Starving)
+                    continue;
+
+                Health h = companion.GetComponent<Health>();
+                if (h != null)
+                    h.TakeDamage(lifeLostWhenStarving);
+            }
         }
     }
 }
