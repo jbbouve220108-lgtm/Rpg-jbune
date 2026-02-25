@@ -22,8 +22,19 @@ public class RecruitUI : MonoBehaviour
 
     private Recruitable currentRecruit;
 
+    // =====================================================
+    // INITIALISATION
+    // =====================================================
     void Awake()
     {
+        // 🔒 Singleton béton
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[RecruitUI] Instance dupliquée détruite");
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
 
         if (panel != null)
@@ -36,12 +47,8 @@ public class RecruitUI : MonoBehaviour
     public void Open(Recruitable recruit)
     {
         if (recruit == null)
-            return;
-
-        Companion companion = recruit.GetComponent<Companion>();
-        if (companion != null && !companion.IsPlayerInInteractionRange())
         {
-            InteractionFeedback.Instance?.ShowTooFar();
+            Debug.LogWarning("[RecruitUI] Open appelé avec recruit null");
             return;
         }
 
@@ -52,10 +59,16 @@ public class RecruitUI : MonoBehaviour
         if (hudPanel != null)
             hudPanel.SetActive(false);
 
+        // =========================
+        // NOM
+        // =========================
         Unit unit = recruit.GetComponent<Unit>();
         if (nameText != null)
-            nameText.text = unit != null ? unit.unitName : "Unknown";
+            nameText.text = unit != null ? unit.unitName : "Inconnu";
 
+        // =========================
+        // COÛT
+        // =========================
         if (costText != null)
             costText.text = $"Cost: {recruit.recruitCost} gold";
 
@@ -90,11 +103,11 @@ public class RecruitUI : MonoBehaviour
     // =====================================================
     public void ConfirmRecruit()
     {
-        if (currentRecruit != null)
-        {
-            currentRecruit.Recruit();
-            UpdateGoldText();
-        }
+        if (currentRecruit == null)
+            return;
+
+        currentRecruit.Recruit();
+        UpdateGoldText();
     }
 
     // =====================================================
@@ -107,7 +120,7 @@ public class RecruitUI : MonoBehaviour
     }
 
     // =====================================================
-    // STATS (LECTURE DE Stat -> int)
+    // STATS
     // =====================================================
     void UpdateStatsUI()
     {
@@ -116,7 +129,10 @@ public class RecruitUI : MonoBehaviour
 
         CharacterStats stats = currentRecruit.GetComponent<CharacterStats>();
         if (stats == null)
+        {
+            Debug.LogWarning("[RecruitUI] CharacterStats manquant sur le recruit");
             return;
+        }
 
         foreach (var row in statRows)
         {
@@ -125,47 +141,47 @@ public class RecruitUI : MonoBehaviour
 
             switch (row.name)
             {
-                case "Force":
+                case "StatRow.force":
                     row.SetStat("Force", stats.force.value);
                     break;
 
-                case "Athletisme":
+                case "StatRow.athletisme":
                     row.SetStat("Athlétisme", stats.athletisme.value);
                     break;
 
-                case "Resistance":
+                case "StatRow.resistance":
                     row.SetStat("Résistance", stats.resistance.value);
                     break;
 
-                case "Precision":
+                case "StatRow.precision":
                     row.SetStat("Précision", stats.precision.value);
                     break;
 
-                case "Commandement":
+                case "StatRow.commandement":
                     row.SetStat("Commandement", stats.commandement.value);
                     break;
 
-                case "Charisme":
+                case "StatRow.charisme":
                     row.SetStat("Charisme", stats.charisme.value);
                     break;
 
-                case "Chance":
+                case "StatRow.chance":
                     row.SetStat("Chance", stats.chance.value);
                     break;
 
-                case "Commerce":
+                case "StatRow.commerce":
                     row.SetStat("Commerce", stats.commerce.value);
                     break;
 
-                case "Artisanat":
+                case "StatRow.artisanat":
                     row.SetStat("Artisanat", stats.artisanat.value);
                     break;
 
-                case "Bucheron":
+                case "StatRow.bucheron":
                     row.SetStat("Bûcheron", stats.bucheron.value);
                     break;
 
-                case "Mineur":
+                case "StatRow.mineur":
                     row.SetStat("Mineur", stats.mineur.value);
                     break;
             }

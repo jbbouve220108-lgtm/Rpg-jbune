@@ -17,42 +17,15 @@ public class Recruitable : MonoBehaviour
         rb = GetComponent<Rigidbody>();
     }
 
+    // =====================================================
     // 👉 GESTION DU CLIC DIRECT SUR LE PERSONNAGE
+    // ⚠️ DÉSACTIVÉ VOLONTAIREMENT
+    // Le clic est désormais centralisé via RecruitableClickDetector
+    // =====================================================
     void OnMouseDown()
     {
-        // 🔒 Si une UI est déjà ouverte → on ignore
-        if (UIState.IsModalOpen)
-            return;
-
-        // 🔒 Si déjà recruté → on ignore
-        if (recruited)
-            return;
-
-        // =====================================================
-        // 🔴 BLOQUAGE SI TROP LOIN (EXISTANT)
-        // =====================================================
-        Companion companion = GetComponent<Companion>();
-        if (companion != null && !companion.IsPlayerInInteractionRange())
-        {
-            if (InteractionFeedback.Instance != null)
-            {
-                InteractionFeedback.Instance.ShowTooFar();
-            }
-            return; // ⛔ L’UI NE S’OUVRE PAS
-        }
-        // =====================================================
-
-        // 🔒 GEL PHYSIQUE TEMPORAIRE (EXISTANT)
-        if (rb != null)
-        {
-            wasKinematic = rb.isKinematic;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true;
-        }
-
-        // 🟢 Ouverture de l’UI de recrutement (INCHANGÉ)
-        RecruitUI.Instance.Open(this);
+        // Intentionnellement vide
+        // (évite le double déclenchement et le crash du singleton RecruitUI)
     }
 
     // 👉 Vérification des conditions de recrutement (INCHANGÉ)
@@ -67,7 +40,7 @@ public class Recruitable : MonoBehaviour
         return PlayerResources.Instance.gold >= recruitCost;
     }
 
-    // 👉 Appelé UNIQUEMENT par le bouton "Recruter"
+    // 👉 Appelé UNIQUEMENT par le bouton "Recruter" (INCHANGÉ)
     public void Recruit()
     {
         if (!CanRecruit())
@@ -91,7 +64,7 @@ public class Recruitable : MonoBehaviour
         }
 
         // =====================================================
-        // 🔥 AJOUT DEMANDÉ : INVALIDATION DE LA SÉLECTION
+        // 🔥 INVALIDATION DE LA SÉLECTION (INCHANGÉ)
         // =====================================================
         if (SelectionManager.Instance != null)
         {
@@ -109,6 +82,20 @@ public class Recruitable : MonoBehaviour
         if (rb != null)
         {
             rb.isKinematic = wasKinematic;
+        }
+    }
+
+    // =====================================================
+    // 🔒 APPELÉ AVANT L’OUVERTURE UI (par RecruitableClickDetector)
+    // =====================================================
+    public void FreezePhysicsForUI()
+    {
+        if (rb != null)
+        {
+            wasKinematic = rb.isKinematic;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
         }
     }
 }

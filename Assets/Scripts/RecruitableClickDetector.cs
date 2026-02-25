@@ -2,41 +2,64 @@ using UnityEngine;
 
 public class RecruitableClickDetector : MonoBehaviour
 {
+    [Header("Settings")]
     public LayerMask recruitableLayer;
-    public float maxDistance = 1000f;
+    public float maxDistance = 10f;
+
+    private Camera mainCamera;
+
+    void Start()
+    {
+        mainCamera = Camera.main;
+
+        if (mainCamera == null)
+            Debug.LogError("[RecruitableClickDetector] Camera.main introuvable");
+    }
 
     void Update()
     {
+        if (mainCamera == null)
+            return;
+
+        // 🔒 Sécurité : une UI modale bloque toute interaction monde
         if (UIState.IsModalOpen)
             return;
 
         if (!Input.GetMouseButtonDown(0))
             return;
 
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
 
-        // 🔥 On cherche TOUS les hits sous la souris
-        RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance);
-
-        if (hits.Length == 0)
+        if (!Physics.Raycast(ray, out hit, maxDistance, recruitableLayer))
             return;
 
-        // 🔥 On trie par distance
-        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        Recruitable recruitable = hit.collider.GetComponent<Recruitable>();
+        if (recruitable == null)
+            return;
 
-        // 🔥 On cherche le PREMIER Recruitable, même s’il est derrière
-        foreach (RaycastHit hit in hits)
+        // 🔒 Vérifie l'existence de l'UI
+        if (RecruitUI.Instance == null)
         {
-            // On filtre par layer pour éviter les faux positifs
-            if ((recruitableLayer.value & (1 << hit.collider.gameObject.layer)) == 0)
-                continue;
-
-            Recruitable recruit = hit.collider.GetComponentInParent<Recruitable>();
-            if (recruit != null && recruit.enabled)
-            {
-                RecruitUI.Instance.Open(recruit);
-                return; // ⛔ priorité absolue
-            }
+            Debug.LogError("[RecruitableClickDetector] RecruitUI.Instance introuvable");
+            return;
         }
+
+        // 🔒 Vérification distance via Companion (LOGIQUE EXISTANTE)
+        Companion companion = recruitable.GetComponent<Companion>();
+        if (companion != null && !companion.IsPlayerInInteractionRange())
+        {
+            if (InteractionFeedback.Instance != null)
+            {
+                InteractionFeedback.Instance.ShowTooFar();
+            }
+            return;
+        }
+
+        // 🔒 Gel physique AVANT ouverture UI
+        recruitable.FreezePhysicsForUI();
+
+        // 🟢 Ouverture UI centralisée
+        RecruitUI.Instance.Open(recruitable);
     }
 }
