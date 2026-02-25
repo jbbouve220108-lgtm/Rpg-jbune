@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
+using System.Collections;
 
 public class FormationController : MonoBehaviour
 {
@@ -102,21 +103,46 @@ public class FormationController : MonoBehaviour
         for (int i = 0; i < units.Count; i++)
         {
             // =====================================================
-            // 🔹 AJOUT DEMANDÉ : COUPURE DU FOLLOW
+            // 🔹 AJOUT EXISTANT : COUPURE DU FOLLOW
             // =====================================================
             Companion companion = units[i].GetComponent<Companion>();
             if (companion != null)
             {
-                companion.OnFormationOrder(); // 🔥 clé
+                companion.OnFormationOrder();
             }
             // =====================================================
 
             NavMeshAgent agent = units[i].GetComponent<NavMeshAgent>();
             if (agent)
+            {
+                // =====================================================
+                // 🔥 AJOUT : PRÉCISION MAXIMALE DE PLACEMENT
+                // =====================================================
+                agent.stoppingDistance = 0f; // précision formation
                 agent.SetDestination(markers[i].transform.position);
+
+                // Snap final exact une fois arrivé
+                StartCoroutine(SnapToFormation(agent, markers[i].transform.position));
+                // =====================================================
+            }
         }
 
         ClearMarkers();
+    }
+
+    // =====================================================
+    // 🔥 AJOUT : SNAP FINAL POUR ALIGNEMENT PARFAIT
+    // =====================================================
+    IEnumerator SnapToFormation(NavMeshAgent agent, Vector3 target)
+    {
+        if (agent == null)
+            yield break;
+
+        while (agent.pathPending || agent.remainingDistance > 0.05f)
+            yield return null;
+
+        agent.Warp(target);   // position exacte
+        agent.ResetPath();    // arrêt net
     }
 
     void CreateMarkers(int count)
