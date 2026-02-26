@@ -28,13 +28,18 @@ public class SelectionManager : MonoBehaviour
 
     void Update()
     {
+        // =====================================================
+        // 🔒 AJOUT : BLOCAGE TOTAL SI UNE UI EST OUVERTE
+        // =====================================================
         if (UIState.IsModalOpen)
             return;
+        // =====================================================
 
         HandleLeftMouse();
         HandleRightMouse();
     }
 
+    // ================= LEFT CLICK =================
     void HandleLeftMouse()
     {
         if (Input.GetMouseButtonDown(0))
@@ -56,14 +61,46 @@ public class SelectionManager : MonoBehaviour
         if (Input.GetMouseButtonUp(0))
         {
             if (leftDragging)
+            {
                 SelectUnitsInRectangle();
+            }
             else
+            {
                 IssueMoveOrder();
+            }
 
             leftDragging = false;
         }
     }
 
+    void OnGUI()
+    {
+        if (Input.GetMouseButton(0) && leftDragging)
+        {
+            selectionRect = GetScreenRect(leftStart, Input.mousePosition);
+            DrawSelectionRect(selectionRect);
+        }
+    }
+
+    void SelectUnitsInRectangle()
+    {
+        DeselectAll();
+
+        foreach (SelectableUnit unit in FindObjectsByType<SelectableUnit>(FindObjectsSortMode.None))
+        {
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(unit.transform.position);
+
+            if (screenPos.z < 0)
+                continue;
+
+            if (selectionRect.Contains(screenPos, true))
+            {
+                SelectUnit(unit);
+            }
+        }
+    }
+
+    // ================= MOVE ORDER =================
     void IssueMoveOrder()
     {
         if (selectedUnits.Count == 0)
@@ -82,13 +119,14 @@ public class SelectionManager : MonoBehaviour
                 continue;
 
             NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
-            if (agent == null || !agent.enabled || !agent.isOnNavMesh)
-                continue;
-
-            agent.SetDestination(hit.point);
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            {
+                agent.SetDestination(hit.point);
+            }
         }
     }
 
+    // ================= RIGHT CLICK =================
     void HandleRightMouse()
     {
         if (Input.GetMouseButtonDown(1))
@@ -114,38 +152,25 @@ public class SelectionManager : MonoBehaviour
         }
     }
 
-    void SelectUnitsInRectangle()
+    // ================= API PUBLIQUE =================
+    public List<SelectableUnit> GetSelectedUnits()
     {
-        DeselectAll();
-
-        foreach (SelectableUnit unit in FindObjectsByType<SelectableUnit>(FindObjectsSortMode.None))
-        {
-            Vector3 screenPos = Camera.main.WorldToScreenPoint(unit.transform.position);
-
-            if (screenPos.z < 0)
-                continue;
-
-            if (selectionRect.Contains(screenPos, true))
-                SelectUnit(unit);
-        }
+        return selectedUnits;
     }
-
-    void OnGUI()
-    {
-        if (Input.GetMouseButton(0) && leftDragging)
-        {
-            selectionRect = GetScreenRect(leftStart, Input.mousePosition);
-            DrawSelectionRect(selectionRect);
-        }
-    }
-
-    public List<SelectableUnit> GetSelectedUnits() => selectedUnits;
 
     public void SelectUnit(SelectableUnit unit)
     {
+        // =====================================================
+        // 🔒 CORRECTION UNIQUE : PAS DE SÉLECTION FANTÔME
+        // =====================================================
+        unit.Select();
+
+        if (!unit.isSelected)
+            return;
+        // =====================================================
+
         if (!selectedUnits.Contains(unit))
         {
-            unit.Select();
             selectedUnits.Add(unit);
         }
     }
@@ -158,6 +183,7 @@ public class SelectionManager : MonoBehaviour
         selectedUnits.Clear();
     }
 
+    // ================= UTILS =================
     Rect GetScreenRect(Vector2 p1, Vector2 p2)
     {
         p1.y = Screen.height - p1.y;

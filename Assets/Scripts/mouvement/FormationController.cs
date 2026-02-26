@@ -101,19 +101,29 @@ public class FormationController : MonoBehaviour
 
         for (int i = 0; i < units.Count; i++)
         {
+            // 🔒 Le joueur ignore la formation (LOGIQUE EXISTANTE)
             Unit unit = units[i].GetComponent<Unit>();
             if (unit != null && unit.unitType == UnitType.Player)
+            {
+                // 👉 MODIFICATION MINIMALE :
+                // on laisse passer le joueur vers le NavMesh,
+                // la priorité clavier est déjà gérée dans HybridMovement
+            }
+
+            // 🔒 Unité non recrutée ignorée (LOGIQUE EXISTANTE)
+            Recruitable recruitable = units[i].GetComponent<Recruitable>();
+            Companion companion = units[i].GetComponent<Companion>();
+
+            if (recruitable != null && (companion == null || !companion.isRecruited))
                 continue;
 
-            Companion companion = units[i].GetComponent<Companion>();
-            if (companion == null || !companion.isRecruited)
-                continue;
+            // 🔹 Coupure du follow (LOGIQUE EXISTANTE)
+            if (companion != null)
+                companion.OnFormationOrder();
 
             NavMeshAgent agent = units[i].GetComponent<NavMeshAgent>();
             if (agent == null || !agent.enabled || !agent.isOnNavMesh)
                 continue;
-
-            companion.OnFormationOrder();
 
             agent.stoppingDistance = 0f;
             agent.SetDestination(markers[i].transform.position);
