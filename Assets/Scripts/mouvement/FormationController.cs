@@ -101,24 +101,22 @@ public class FormationController : MonoBehaviour
 
         for (int i = 0; i < units.Count; i++)
         {
-            // 🔒 Le joueur ignore la formation
             Unit unit = units[i].GetComponent<Unit>();
             if (unit != null && unit.unitType == UnitType.Player)
                 continue;
 
-            // 🔹 Coupure du follow
             Companion companion = units[i].GetComponent<Companion>();
-            if (companion != null)
-            {
-                companion.OnFormationOrder();
-            }
+            if (companion == null || !companion.isRecruited)
+                continue;
 
             NavMeshAgent agent = units[i].GetComponent<NavMeshAgent>();
-            if (agent)
-            {
-                agent.stoppingDistance = 0f;
-                agent.SetDestination(markers[i].transform.position);
-            }
+            if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+                continue;
+
+            companion.OnFormationOrder();
+
+            agent.stoppingDistance = 0f;
+            agent.SetDestination(markers[i].transform.position);
         }
 
         ClearMarkers();

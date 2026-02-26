@@ -109,7 +109,10 @@ public class UICompanions : MonoBehaviour
             return;
         }
 
-        WrapIndex();
+        int count = CompanionManager.Instance.companions.Count;
+
+        if (currentIndex < 0 || currentIndex >= count)
+            currentIndex = 0;
 
         currentCompanion = CompanionManager.Instance.companions[currentIndex];
 
@@ -129,7 +132,7 @@ public class UICompanions : MonoBehaviour
             followToggle.onValueChanged.RemoveAllListeners();
 
             followToggle.interactable = true;
-            followToggle.isOn = currentCompanion.isFollowing;
+            followToggle.SetIsOnWithoutNotify(currentCompanion.isFollowing);
 
             followToggle.onValueChanged.AddListener(OnFollowToggleChanged);
         }

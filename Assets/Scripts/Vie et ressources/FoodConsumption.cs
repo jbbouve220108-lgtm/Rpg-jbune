@@ -119,6 +119,12 @@ public class FoodConsumption : MonoBehaviour
                 if (fed.Contains(companion))
                 {
                     hungryCompanions.Remove(companion);
+
+                    if (companion.isFollowing)
+                        companion.SetState(CompanionState.Following);
+                    else
+                        companion.SetState(CompanionState.Idle);
+
                     continue;
                 }
 
