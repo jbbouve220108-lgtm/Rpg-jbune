@@ -21,24 +21,26 @@ public class CharacterStats : MonoBehaviour
 
     void Awake()
     {
-        InitStat(ref force);
-        InitStat(ref athletisme);
-        InitStat(ref resistance);
-        InitStat(ref precision);
+        // 🔒 OPTION B :
+        // On FORCE la recréation des stats pour éviter toute valeur sérialisée du prefab
+        InitStat(ref force, true);
+        InitStat(ref athletisme, true);
+        InitStat(ref resistance, true);
+        InitStat(ref precision, true);
 
-        InitStat(ref commandement);
-        InitStat(ref charisme);
-        InitStat(ref chance);
+        InitStat(ref commandement, true);
+        InitStat(ref charisme, true);
+        InitStat(ref chance, true);
 
-        InitStat(ref commerce);
-        InitStat(ref artisanat);
-        InitStat(ref bucheron);
-        InitStat(ref mineur);
+        InitStat(ref commerce, true);
+        InitStat(ref artisanat, true);
+        InitStat(ref bucheron, true);
+        InitStat(ref mineur, true);
     }
 
-    void InitStat(ref Stat stat)
+    void InitStat(ref Stat stat, bool forceReset)
     {
-        if (stat == null)
+        if (forceReset || stat == null)
             stat = new Stat();
     }
 }

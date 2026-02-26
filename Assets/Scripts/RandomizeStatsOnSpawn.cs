@@ -12,7 +12,7 @@ public class RandomizeStatsOnSpawn : MonoBehaviour
 
     private bool initialized = false;
 
-    void Awake()
+    void Start()
     {
         TryInitialize();
     }

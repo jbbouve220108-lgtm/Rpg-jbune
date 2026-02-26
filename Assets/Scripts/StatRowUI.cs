@@ -4,6 +4,10 @@ using TMPro;
 
 public class StatRowUI : MonoBehaviour
 {
+    [Header("Config")]
+    public StatType statType;
+    public int maxStatValue = 100;
+
     [Header("Texts")]
     public TextMeshProUGUI labelText;
     public TextMeshProUGUI currentValueText;
@@ -12,21 +16,23 @@ public class StatRowUI : MonoBehaviour
     [Header("Bar")]
     public Image barFill;
 
-    [Header("Config")]
-    public int maxStatValue = 100;
-
     // =====================================================
     // APPEL PUBLIC
     // =====================================================
-    public void SetStat(string statName, int currentValue)
+    public void SetStat(CharacterStats stats)
     {
-        int nextValue = GetNextThreshold(currentValue);
+        if (stats == null)
+            return;
 
-        currentValue = Mathf.Clamp(currentValue, 0, maxStatValue);
-        nextValue = Mathf.Clamp(nextValue, 1, maxStatValue);
+        Stat stat = GetStatFromCharacter(stats);
+        if (stat == null)
+            return;
+
+        int currentValue = Mathf.Clamp(stat.value, 0, maxStatValue);
+        int nextValue = Mathf.Clamp(GetNextThreshold(currentValue), 1, maxStatValue);
 
         if (labelText != null)
-            labelText.text = statName;
+            labelText.text = GetLabel();
 
         if (currentValueText != null)
             currentValueText.text = currentValue.ToString();
@@ -35,16 +41,40 @@ public class StatRowUI : MonoBehaviour
             nextValueText.text = nextValue.ToString();
 
         if (barFill != null)
-        {
-            float fill = currentValue / (float)nextValue;
-            barFill.fillAmount = Mathf.Clamp01(fill);
-        }
+            barFill.fillAmount = Mathf.Clamp01(currentValue / (float)nextValue);
     }
 
     // =====================================================
-    // PROGRESSION SIMPLE (Kenshi-like)
+    // RÉSOLUTION STAT
     // =====================================================
-    private int GetNextThreshold(int current)
+    Stat GetStatFromCharacter(CharacterStats stats)
+    {
+        return statType switch
+        {
+            StatType.Force => stats.force,
+            StatType.Athletisme => stats.athletisme,
+            StatType.Resistance => stats.resistance,
+            StatType.Precision => stats.precision,
+
+            StatType.Commandement => stats.commandement,
+            StatType.Charisme => stats.charisme,
+            StatType.Chance => stats.chance,
+
+            StatType.Commerce => stats.commerce,
+            StatType.Artisanat => stats.artisanat,
+            StatType.Bucheron => stats.bucheron,
+            StatType.Mineur => stats.mineur,
+
+            _ => null
+        };
+    }
+
+    string GetLabel()
+    {
+        return statType.ToString();
+    }
+
+    int GetNextThreshold(int current)
     {
         return ((current / 10) + 1) * 10;
     }

@@ -124,11 +124,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1cc7677a0fb606428b750ccb73c2bdb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  statType: 1
+  maxStatValue: 100
   labelText: {fileID: 5559514402210797325}
   currentValueText: {fileID: 8482092521678572081}
   nextValueText: {fileID: 1019862551454530971}
   barFill: {fileID: 6602569543409294659}
-  maxStatValue: 100
 --- !u!1 &4615197740627166725
 GameObject:
   m_ObjectHideFlags: 0

@@ -139,52 +139,9 @@ public class RecruitUI : MonoBehaviour
             if (row == null)
                 continue;
 
-            switch (row.name)
-            {
-                case "StatRow.force":
-                    row.SetStat("Force", stats.force.value);
-                    break;
-
-                case "StatRow.athletisme":
-                    row.SetStat("Athlétisme", stats.athletisme.value);
-                    break;
-
-                case "StatRow.resistance":
-                    row.SetStat("Résistance", stats.resistance.value);
-                    break;
-
-                case "StatRow.precision":
-                    row.SetStat("Précision", stats.precision.value);
-                    break;
-
-                case "StatRow.commandement":
-                    row.SetStat("Commandement", stats.commandement.value);
-                    break;
-
-                case "StatRow.charisme":
-                    row.SetStat("Charisme", stats.charisme.value);
-                    break;
-
-                case "StatRow.chance":
-                    row.SetStat("Chance", stats.chance.value);
-                    break;
-
-                case "StatRow.commerce":
-                    row.SetStat("Commerce", stats.commerce.value);
-                    break;
-
-                case "StatRow.artisanat":
-                    row.SetStat("Artisanat", stats.artisanat.value);
-                    break;
-
-                case "StatRow.bucheron":
-                    row.SetStat("Bûcheron", stats.bucheron.value);
-                    break;
-
-                case "StatRow.mineur":
-                    row.SetStat("Mineur", stats.mineur.value);
-                    break;
-            }
+            // 🔥 Adaptation STRICTEMENT nécessaire
+            // Chaque StatRowUI sait maintenant quelle stat afficher
+            row.SetStat(stats);
         }
     }
 }
