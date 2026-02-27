@@ -7,7 +7,7 @@ public class Stat
     public int value = 0;
 
     [Header("Progression")]
-    public float progress = 0f;
+    public float progress = 0f; // 0 → 1 normalisé
 
     [Header("Config")]
     public int maxValue = 100;
@@ -15,11 +15,8 @@ public class Stat
     // =====================================================
     // CONSTRUCTEURS
     // =====================================================
-
-    // Constructeur par défaut (Unity / Inspector)
     public Stat() { }
 
-    // 🔥 Constructeur de copie (CLÉ DU FIX)
     public Stat(Stat other)
     {
         if (other == null)
@@ -49,15 +46,36 @@ public class Stat
     }
 
     // =====================================================
-    // API PROGRESSION
+    // 🔥 PROGRESSION EXPONENTIELLE NORMALISÉE
     // =====================================================
-    public void AddProgress(float amount)
+    public bool AddProgressAndCheckLevelUp(float rawAmount)
     {
-        progress += amount;
+        if (value >= maxValue)
+            return false;
+
+        float requiredProgress = GetRequiredProgressForNextLevel();
+
+        // 🔑 NORMALISATION (clé du fix)
+        progress += rawAmount / requiredProgress;
+
+        if (progress >= 1f)
+        {
+            progress -= 1f;
+            value = Mathf.Clamp(value + 1, 0, maxValue);
+            return true;
+        }
+
+        return false;
     }
 
-    public void ResetProgress()
+    // =====================================================
+    // COURBE EXPONENTIELLE LONG TERME
+    // =====================================================
+    float GetRequiredProgressForNextLevel()
     {
-        progress = 0f;
+        int level = Mathf.Max(value, 1);
+
+        // Courbe endgame (40–100 très long mais atteignable)
+        return 1f + Mathf.Pow(level, 1.6f) * 0.15f;
     }
 }

@@ -23,6 +23,11 @@ public class UICompanions : MonoBehaviour
     private int currentIndex = 0;
     private Companion currentCompanion;
 
+    // =====================================================
+    // 🆕 ÉTAT D’OUVERTURE UI (AJOUT)
+    // =====================================================
+    private bool isOpen = false;
+
     void Awake()
     {
         // On récupère automatiquement toutes les lignes de stats présentes dans le panel
@@ -46,19 +51,21 @@ public class UICompanions : MonoBehaviour
         if (panel == null)
             return;
 
-        bool isActive = panel.activeSelf;
-        panel.SetActive(!isActive);
+        bool newState = !panel.activeSelf;
+        panel.SetActive(newState);
 
-        if (!isActive)
+        if (newState)
         {
-            // Bloque les interactions de jeu (mouvement, sélection)
-            UIState.OpenModal(); 
+            // Bloque les interactions de jeu
+            UIState.OpenModal();
+            isOpen = true;
             RefreshUI();
         }
         else
         {
             // Libère les interactions de jeu
-            UIState.CloseModal(); 
+            UIState.CloseModal();
+            isOpen = false;
         }
     }
 
@@ -67,8 +74,30 @@ public class UICompanions : MonoBehaviour
         if (panel != null)
         {
             panel.SetActive(false);
+            isOpen = false;
             UIState.CloseModal();
         }
+    }
+
+    // =====================================================
+    // 🆕 RAFRAÎCHISSEMENT LIVE DES STATS (AJOUT)
+    // =====================================================
+    void Update()
+    {
+        if (!isOpen || currentCompanion == null)
+            return;
+
+        CharacterStats stats = currentCompanion.GetComponent<CharacterStats>();
+        if (stats == null)
+            return;
+
+        foreach (var row in statRows)
+        {
+            if (row != null)
+                row.SetStat(stats);
+        }
+
+        RefreshState();
     }
 
     // =====================================================
@@ -157,13 +186,13 @@ public class UICompanions : MonoBehaviour
             followToggle.onValueChanged.AddListener(OnFollowToggleChanged);
         }
 
-        // 🔹 Stats (On envoie les stats du compagnon actuel aux lignes d'UI)
+        // 🔹 Stats
         CharacterStats stats = currentCompanion.GetComponent<CharacterStats>();
         if (stats != null)
         {
             foreach (var row in statRows)
             {
-                if (row != null) 
+                if (row != null)
                     row.SetStat(stats);
             }
         }
@@ -221,10 +250,10 @@ public class UICompanions : MonoBehaviour
             followToggle.interactable = false;
         }
 
-        // On vide les barres de stats
         foreach (var row in statRows)
         {
-            if (row != null) row.SetStat(null);
+            if (row != null)
+                row.SetStat(null);
         }
     }
 

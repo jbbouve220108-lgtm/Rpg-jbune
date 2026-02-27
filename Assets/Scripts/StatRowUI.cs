@@ -28,7 +28,6 @@ public class StatRowUI : MonoBehaviour
             return;
 
         int currentValue = stat.value;
-        // 🔥 MODIF : Le prochain palier est maintenant le niveau actuel + 1
         int nextThreshold = GetNextThreshold(currentValue);
 
         if (labelText != null)
@@ -42,9 +41,9 @@ public class StatRowUI : MonoBehaviour
 
         if (barFill != null)
         {
-            // Ratio de remplissage (ex: 17/18)
-            float ratio = (nextThreshold > 0) ? (float)currentValue / nextThreshold : 0f;
-            barFill.fillAmount = Mathf.Clamp01(ratio);
+            // ✅ BARRE PROGRESSIVE VERS LE NIVEAU SUIVANT
+            // stat.progress est normalisé (0 → 1)
+            barFill.fillAmount = Mathf.Clamp01(stat.progress);
         }
     }
 
@@ -64,9 +63,11 @@ public class StatRowUI : MonoBehaviour
             case StatType.Athletisme:   return stats.athletisme;
             case StatType.Resistance:  return stats.resistance;
             case StatType.Precision:   return stats.precision;
+
             case StatType.Charisme:     return stats.charisme;
             case StatType.Commandement: return stats.commandement;
             case StatType.Chance:       return stats.chance;
+
             case StatType.Mineur:       return stats.mineur;
             case StatType.Bucheron:     return stats.bucheron;
             case StatType.Artisanat:    return stats.artisanat;
@@ -75,7 +76,7 @@ public class StatRowUI : MonoBehaviour
         return null;
     }
 
-    // 🔥 MODIF : Logique de palier simplifiée
+    // 🔥 Logique de palier inchangée
     int GetNextThreshold(int current)
     {
         return current + 1;

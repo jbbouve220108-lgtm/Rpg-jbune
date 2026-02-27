@@ -43,6 +43,14 @@ public class Companion : MonoBehaviour
     public float interactionDistance = 2.0f;
 
     // =====================================================
+    // 🆕 ATHLÉTISME (AJOUT)
+    // =====================================================
+    [Header("Athlétisme")]
+    public float baseSpeed = 3f;
+    public float speedPerAthleticism = 0.05f;
+    public float athleticismGainPerSecond = 0.1f;
+
+    // =====================================================
     // STATE
     // =====================================================
     [Header("State")]
@@ -181,18 +189,46 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // LOGIQUE DE DÉPLACEMENT (INCHANGÉE)
+    // 🆕 ATHLÉTISME : SPEED & PROGRESSION (AJOUT)
+    // =====================================================
+    void UpdateAthleticismSpeed()
+    {
+        if (agent == null)
+            return;
+
+        CharacterStats stats = GetComponent<CharacterStats>();
+        if (stats == null || stats.athletisme == null)
+            return;
+
+        agent.speed = baseSpeed + stats.athletisme.value * speedPerAthleticism;
+    }
+
+    // =====================================================
+    // LOGIQUE DE DÉPLACEMENT
     // =====================================================
     void FixedUpdate()
     {
         if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh || player == null)
             return;
 
+        // 🆕 GAIN D’ATHLÉTISME SI MOUVEMENT
+        if (agent.velocity.sqrMagnitude > 0.01f)
+        {
+            CharacterStats stats = GetComponent<CharacterStats>();
+            if (stats != null && stats.athletisme != null)
+            {
+                stats.athletisme.AddProgressAndCheckLevelUp(
+                    Time.fixedDeltaTime * athleticismGainPerSecond
+                );
+            }
+        }
+
+        // 🆕 Mise à jour dynamique de la vitesse
+        UpdateAthleticismSpeed();
+
         // 🔥 1. ORDRE MANUEL / FORMATION ACTIF → PRIORITÉ
         if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
-        {
             return;
-        }
 
         // 🔹 2. PAS EN FOLLOW → ON NE FAIT RIEN
         if (!isFollowing)
