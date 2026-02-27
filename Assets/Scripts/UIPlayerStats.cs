@@ -7,12 +7,13 @@ public class UIPlayerStats : MonoBehaviour
     public GameObject panel;
 
     [Header("HUD")]
-    public GameObject hudPanel;   // 🔹 AJOUT
+    public GameObject hudPanel;
 
     [Header("Stats UI")]
     public List<StatRowUI> statRows = new List<StatRowUI>();
 
     private CharacterStats playerStats;
+    private AthleticsProgression athleticsProgression;
     private bool isOpen = false;
 
     // =====================================================
@@ -31,7 +32,21 @@ public class UIPlayerStats : MonoBehaviour
     {
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
+        {
             playerStats = player.GetComponent<CharacterStats>();
+            athleticsProgression = player.GetComponent<AthleticsProgression>();
+
+            // 🔗 Lien propre pour l’athlétisme
+            foreach (var row in statRows)
+            {
+                if (row.statType == StatType.Athletisme && athleticsProgression != null)
+                {
+                    row.SetProgressProvider(() =>
+                        athleticsProgression.GetXpRequiredForNextLevel(playerStats.athletisme.value)
+                    );
+                }
+            }
+        }
     }
 
     // =====================================================
@@ -55,7 +70,6 @@ public class UIPlayerStats : MonoBehaviour
 
         CloseAllOtherUI();
 
-        // 🔒 HUD OFF
         if (hudPanel != null)
             hudPanel.SetActive(false);
 
@@ -74,7 +88,6 @@ public class UIPlayerStats : MonoBehaviour
         panel.SetActive(false);
         isOpen = false;
 
-        // 🔓 HUD ON
         if (hudPanel != null)
             hudPanel.SetActive(true);
 

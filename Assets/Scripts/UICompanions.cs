@@ -23,14 +23,10 @@ public class UICompanions : MonoBehaviour
     private int currentIndex = 0;
     private Companion currentCompanion;
 
-    // =====================================================
-    // 🆕 ÉTAT D’OUVERTURE UI (AJOUT)
-    // =====================================================
     private bool isOpen = false;
 
     void Awake()
     {
-        // On récupère automatiquement toutes les lignes de stats présentes dans le panel
         statRows.Clear();
         statRows.AddRange(GetComponentsInChildren<StatRowUI>(true));
 
@@ -43,9 +39,6 @@ public class UICompanions : MonoBehaviour
         RefreshUI();
     }
 
-    // =====================================================
-    // OUVERTURE / FERMETURE
-    // =====================================================
     public void TogglePanel()
     {
         if (panel == null)
@@ -56,14 +49,12 @@ public class UICompanions : MonoBehaviour
 
         if (newState)
         {
-            // Bloque les interactions de jeu
             UIState.OpenModal();
             isOpen = true;
             RefreshUI();
         }
         else
         {
-            // Libère les interactions de jeu
             UIState.CloseModal();
             isOpen = false;
         }
@@ -79,9 +70,6 @@ public class UICompanions : MonoBehaviour
         }
     }
 
-    // =====================================================
-    // 🆕 RAFRAÎCHISSEMENT LIVE DES STATS (AJOUT)
-    // =====================================================
     void Update()
     {
         if (!isOpen || currentCompanion == null)
@@ -100,9 +88,6 @@ public class UICompanions : MonoBehaviour
         RefreshState();
     }
 
-    // =====================================================
-    // NAVIGATION ENTRE COMPAGNONS (CIRCULAIRE)
-    // =====================================================
     public void NextCompanion()
     {
         if (!HasCompanions())
@@ -126,16 +111,12 @@ public class UICompanions : MonoBehaviour
     void WrapIndex()
     {
         int count = CompanionManager.Instance.companions.Count;
-
         if (currentIndex < 0)
             currentIndex = count - 1;
         else if (currentIndex >= count)
             currentIndex = 0;
     }
 
-    // =====================================================
-    // FOLLOW (INDIVIDUEL)
-    // =====================================================
     void OnFollowToggleChanged(bool follow)
     {
         if (currentCompanion == null)
@@ -149,9 +130,6 @@ public class UICompanions : MonoBehaviour
         RefreshState();
     }
 
-    // =====================================================
-    // RAFRAÎCHISSEMENT UI
-    // =====================================================
     void RefreshUI()
     {
         if (!HasCompanions())
@@ -161,7 +139,6 @@ public class UICompanions : MonoBehaviour
         }
 
         int count = CompanionManager.Instance.companions.Count;
-
         if (currentIndex < 0 || currentIndex >= count)
             currentIndex = 0;
 
@@ -173,11 +150,9 @@ public class UICompanions : MonoBehaviour
             return;
         }
 
-        // 🔹 Nom
         if (nameText != null)
             nameText.text = currentCompanion.companionName;
 
-        // 🔹 Toggle Follow
         if (followToggle != null)
         {
             followToggle.onValueChanged.RemoveAllListeners();
@@ -186,7 +161,6 @@ public class UICompanions : MonoBehaviour
             followToggle.onValueChanged.AddListener(OnFollowToggleChanged);
         }
 
-        // 🔹 Stats
         CharacterStats stats = currentCompanion.GetComponent<CharacterStats>();
         if (stats != null)
         {
@@ -200,9 +174,6 @@ public class UICompanions : MonoBehaviour
         RefreshState();
     }
 
-    // =====================================================
-    // ÉTAT / STATS (PRIORITÉS RESPECTÉES)
-    // =====================================================
     void RefreshState()
     {
         if (stateText == null || currentCompanion == null)
@@ -213,19 +184,15 @@ public class UICompanions : MonoBehaviour
             case CompanionState.Dying:
                 stateText.text = "En train de mourir";
                 break;
-
             case CompanionState.Starving:
                 stateText.text = "Famine";
                 break;
-
             case CompanionState.Hungry:
                 stateText.text = "À faim";
                 break;
-
             case CompanionState.Following:
                 stateText.text = "Following";
                 break;
-
             case CompanionState.Idle:
             default:
                 stateText.text = "Idle";
@@ -236,30 +203,20 @@ public class UICompanions : MonoBehaviour
     void ShowEmptyState()
     {
         currentCompanion = null;
-
-        if (nameText != null)
-            nameText.text = "Aucun compagnon";
-
-        if (stateText != null)
-            stateText.text = "";
-
+        if (nameText != null) nameText.text = "Aucun compagnon";
+        if (stateText != null) stateText.text = "";
         if (followToggle != null)
         {
             followToggle.onValueChanged.RemoveAllListeners();
             followToggle.isOn = false;
             followToggle.interactable = false;
         }
-
         foreach (var row in statRows)
         {
-            if (row != null)
-                row.SetStat(null);
+            if (row != null) row.SetStat(null);
         }
     }
 
-    // =====================================================
-    // UTILS
-    // =====================================================
     bool HasCompanions()
     {
         return CompanionManager.Instance != null &&

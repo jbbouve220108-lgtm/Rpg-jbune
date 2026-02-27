@@ -1,13 +1,12 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public class PlayerAthletics : MonoBehaviour
+public class CompanionAthletics : MonoBehaviour
 {
     [Header("Gain Settings")]
     public float xpPerSecondMoving = 1f;
 
     private NavMeshAgent agent;
-    private HybridMovement movement;
     private AthleticsProgression progression;
 
     // =====================================================
@@ -16,13 +15,15 @@ public class PlayerAthletics : MonoBehaviour
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        movement = GetComponent<HybridMovement>();
         progression = GetComponent<AthleticsProgression>();
     }
 
     void Update()
     {
-        if (progression == null)
+        if (agent == null || progression == null)
+            return;
+
+        if (!agent.enabled || !agent.isOnNavMesh)
             return;
 
         if (!IsMoving())
@@ -32,18 +33,11 @@ public class PlayerAthletics : MonoBehaviour
     }
 
     // =====================================================
-    // DÉTECTION DE MOUVEMENT RÉEL
+    // DÉTECTION DE MOUVEMENT RÉEL (NAVMESH)
     // =====================================================
     bool IsMoving()
     {
-        // Priorité au déplacement clavier
-        if (movement != null && movement.IsMoving())
-            return true;
-
-        // Fallback NavMesh
-        if (agent != null)
-            return agent.velocity.magnitude > 0.1f;
-
-        return false;
+        // Vitesse réelle du NavMeshAgent
+        return agent.velocity.magnitude > 0.1f;
     }
 }

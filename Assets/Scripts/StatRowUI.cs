@@ -16,19 +16,26 @@ public class StatRowUI : MonoBehaviour
     [Header("Bar")]
     public Image barFill;
 
+    // 🔹 Fournisseur optionnel (UIPlayerStats)
+    private System.Func<float> getMaxProgress;
+
+    // =====================================================
+    // API PUBLIQUE
+    // =====================================================
     public void SetStat(CharacterStats stats)
     {
-        ResetUI();
-
         if (stats == null)
+        {
+            ResetUI();
             return;
+        }
 
         Stat stat = ResolveStat(stats);
         if (stat == null)
             return;
 
         int currentValue = stat.value;
-        int nextThreshold = GetNextThreshold(currentValue);
+        int nextValue = currentValue + 1;
 
         if (labelText != null)
             labelText.text = statType.ToString();
@@ -37,16 +44,39 @@ public class StatRowUI : MonoBehaviour
             currentValueText.text = currentValue.ToString();
 
         if (nextValueText != null)
-            nextValueText.text = nextThreshold.ToString();
+            nextValueText.text = nextValue.ToString();
 
         if (barFill != null)
         {
-            // ✅ BARRE PROGRESSIVE VERS LE NIVEAU SUIVANT
-            // stat.progress est normalisé (0 → 1)
-            barFill.fillAmount = Mathf.Clamp01(stat.progress);
+            float max = 1f;
+
+            // 🔥 Athlétisme → vraie courbe
+            if (statType == StatType.Athletisme)
+            {
+                AthleticsProgression prog = stats.GetComponent<AthleticsProgression>();
+                if (prog != null)
+                    max = prog.GetXpRequiredForNextLevel(currentValue);
+            }
+
+            // 🔒 Override UI si fourni
+            if (getMaxProgress != null)
+                max = getMaxProgress();
+
+            barFill.fillAmount = Mathf.Clamp01(stat.progress / Mathf.Max(1f, max));
         }
     }
 
+    // =====================================================
+    // API OPTIONNELLE (inchangée côté appel)
+    // =====================================================
+    public void SetProgressProvider(System.Func<float> provider)
+    {
+        getMaxProgress = provider;
+    }
+
+    // =====================================================
+    // UTILS
+    // =====================================================
     void ResetUI()
     {
         if (labelText != null) labelText.text = "";
@@ -74,11 +104,5 @@ public class StatRowUI : MonoBehaviour
             case StatType.Commerce:     return stats.commerce;
         }
         return null;
-    }
-
-    // 🔥 Logique de palier inchangée
-    int GetNextThreshold(int current)
-    {
-        return current + 1;
     }
 }
