@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
-using UnityEngine.AI;
+using System.Collections.Generic;
 
 public class UICompanions : MonoBehaviour
 {
@@ -17,14 +17,24 @@ public class UICompanions : MonoBehaviour
     public Button prevButton;
     public Button nextButton;
 
+    [Header("Stats UI")]
+    public List<StatRowUI> statRows = new List<StatRowUI>();
+
     private int currentIndex = 0;
     private Companion currentCompanion;
 
-    void Start()
+    void Awake()
     {
+        // On récupère automatiquement toutes les lignes de stats présentes dans le panel
+        statRows.Clear();
+        statRows.AddRange(GetComponentsInChildren<StatRowUI>(true));
+
         if (panel != null)
             panel.SetActive(false);
+    }
 
+    void Start()
+    {
         RefreshUI();
     }
 
@@ -40,13 +50,25 @@ public class UICompanions : MonoBehaviour
         panel.SetActive(!isActive);
 
         if (!isActive)
+        {
+            // Bloque les interactions de jeu (mouvement, sélection)
+            UIState.OpenModal(); 
             RefreshUI();
+        }
+        else
+        {
+            // Libère les interactions de jeu
+            UIState.CloseModal(); 
+        }
     }
 
     public void ClosePanel()
     {
         if (panel != null)
+        {
             panel.SetActive(false);
+            UIState.CloseModal();
+        }
     }
 
     // =====================================================
@@ -130,11 +152,20 @@ public class UICompanions : MonoBehaviour
         if (followToggle != null)
         {
             followToggle.onValueChanged.RemoveAllListeners();
-
             followToggle.interactable = true;
             followToggle.SetIsOnWithoutNotify(currentCompanion.isFollowing);
-
             followToggle.onValueChanged.AddListener(OnFollowToggleChanged);
+        }
+
+        // 🔹 Stats (On envoie les stats du compagnon actuel aux lignes d'UI)
+        CharacterStats stats = currentCompanion.GetComponent<CharacterStats>();
+        if (stats != null)
+        {
+            foreach (var row in statRows)
+            {
+                if (row != null) 
+                    row.SetStat(stats);
+            }
         }
 
         RefreshState();
@@ -188,6 +219,12 @@ public class UICompanions : MonoBehaviour
             followToggle.onValueChanged.RemoveAllListeners();
             followToggle.isOn = false;
             followToggle.interactable = false;
+        }
+
+        // On vide les barres de stats
+        foreach (var row in statRows)
+        {
+            if (row != null) row.SetStat(null);
         }
     }
 

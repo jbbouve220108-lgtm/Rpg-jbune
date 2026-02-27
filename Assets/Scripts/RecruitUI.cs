@@ -24,6 +24,7 @@ public class RecruitUI : MonoBehaviour
 
     void Awake()
     {
+        // Singleton
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -31,7 +32,7 @@ public class RecruitUI : MonoBehaviour
         }
         Instance = this;
 
-        // Récupération dynamique des lignes
+        // Récupération dynamique des lignes pour éviter le problème des Prefabs
         statRows.Clear();
         statRows.AddRange(GetComponentsInChildren<StatRowUI>(true));
 
@@ -43,10 +44,18 @@ public class RecruitUI : MonoBehaviour
     {
         if (recruit == null) return;
 
+        // 🔥 SÉCURITÉ : Empêche l'ouverture si déjà recruté
+        Companion companion = recruit.GetComponent<Companion>();
+        if (companion != null && companion.isRecruited)
+        {
+            return; 
+        }
+
         currentRecruit = recruit;
         UIState.OpenModal();
 
-        if (hudPanel != null) hudPanel.SetActive(false);
+        if (hudPanel != null) 
+            hudPanel.SetActive(false);
 
         Unit unit = recruit.GetComponent<Unit>();
         if (nameText != null)
@@ -55,7 +64,8 @@ public class RecruitUI : MonoBehaviour
         if (costText != null)
             costText.text = $"Cost: {recruit.recruitCost} gold";
 
-        if (panel != null) panel.SetActive(true);
+        if (panel != null) 
+            panel.SetActive(true);
 
         CharacterStats stats = recruit.GetComponent<CharacterStats>();
         if (stats != null)
@@ -63,24 +73,34 @@ public class RecruitUI : MonoBehaviour
             stats.EnsureInitialized();
             foreach (var row in statRows)
             {
-                if (row != null) row.SetStat(stats);
+                if (row != null) 
+                    row.SetStat(stats);
             }
         }
+
         UpdateGoldText();
     }
 
     public void Close()
     {
-        if (panel != null) panel.SetActive(false);
-        if (currentRecruit != null) currentRecruit.RestorePhysics();
+        if (panel != null) 
+            panel.SetActive(false);
+
+        if (currentRecruit != null) 
+            currentRecruit.RestorePhysics();
+
         currentRecruit = null;
-        if (hudPanel != null) hudPanel.SetActive(true);
+
+        if (hudPanel != null) 
+            hudPanel.SetActive(true);
+
         UIState.CloseModal();
     }
 
     public void ConfirmRecruit()
     {
         if (currentRecruit == null) return;
+        
         currentRecruit.Recruit();
         UpdateGoldText();
     }
