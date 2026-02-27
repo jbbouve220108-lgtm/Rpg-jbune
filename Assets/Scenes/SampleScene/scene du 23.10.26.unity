@@ -377,6 +377,8 @@ GameObject:
   - component: {fileID: 151094227}
   - component: {fileID: 151094228}
   - component: {fileID: 151094229}
+  - component: {fileID: 151094230}
+  - component: {fileID: 151094231}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -396,7 +398,8 @@ Transform:
   m_LocalPosition: {x: 1.8600006, y: 2.11, z: 5.19508}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1784374342}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &151094221
@@ -600,10 +603,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xpPerSecondMoving: 1
+--- !u!114 &151094230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 151094217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2c9b99d603949243b6b56c244bb2943, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   baseXpRequired: 10
   exponentialFactor: 1.15
-  maxAthleticsLevel: 100
-  speedBonusPerLevel: 0.05
+  maxLevel: 100
+--- !u!114 &151094231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 151094217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 249549ccb43a3d34c9467c751c86c881, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  handSlot: {fileID: 1784374342}
+  currentWeapon: {fileID: 0}
 --- !u!1001 &170525389
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3949,6 +3977,8 @@ GameObject:
   - component: {fileID: 664250351}
   - component: {fileID: 664250352}
   - component: {fileID: 664250353}
+  - component: {fileID: 664250354}
+  - component: {fileID: 664250355}
   m_Layer: 6
   m_Name: Mercenaire
   m_TagString: Untagged
@@ -4227,6 +4257,34 @@ MonoBehaviour:
     value: 0
     progress: 0
     maxValue: 100
+--- !u!114 &664250354
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 664250339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2c9b99d603949243b6b56c244bb2943, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseXpRequired: 10
+  exponentialFactor: 1.15
+  maxLevel: 100
+--- !u!114 &664250355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 664250339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d7d2bad20893f343a50cae2b7556fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  xpPerSecondMoving: 1
 --- !u!224 &664577541 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3307053224531817565, guid: 8ebceecde20e58f49b109014d5d1662c, type: 3}
@@ -7449,6 +7507,8 @@ GameObject:
   - component: {fileID: 1301826670}
   - component: {fileID: 1301826669}
   - component: {fileID: 1301826667}
+  - component: {fileID: 1301826679}
+  - component: {fileID: 1301826680}
   m_Layer: 6
   m_Name: Mercenaire (2)
   m_TagString: Untagged
@@ -7727,6 +7787,34 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1301826665}
   m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1301826679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301826665}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2c9b99d603949243b6b56c244bb2943, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseXpRequired: 10
+  exponentialFactor: 1.15
+  maxLevel: 100
+--- !u!114 &1301826680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301826665}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d7d2bad20893f343a50cae2b7556fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  xpPerSecondMoving: 1
 --- !u!224 &1313935083 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2901410201348790745, guid: 318b9d598a2f01947bb9e787c61d8f89, type: 3}
@@ -9502,6 +9590,8 @@ GameObject:
   - component: {fileID: 1638255435}
   - component: {fileID: 1638255434}
   - component: {fileID: 1638255432}
+  - component: {fileID: 1638255444}
+  - component: {fileID: 1638255445}
   m_Layer: 6
   m_Name: Pauvre
   m_TagString: Untagged
@@ -9780,6 +9870,34 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1638255430}
   m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1638255444
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1638255430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2c9b99d603949243b6b56c244bb2943, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseXpRequired: 10
+  exponentialFactor: 1.15
+  maxLevel: 100
+--- !u!114 &1638255445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1638255430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d7d2bad20893f343a50cae2b7556fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  xpPerSecondMoving: 1
 --- !u!224 &1644302422 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4076440535126040854, guid: 6a988d3c77f19214384e7b8aa02fbc9b, type: 3}
@@ -10331,6 +10449,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1769771978}
   m_CullTransparentMesh: 1
+--- !u!1 &1784374341
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1784374342}
+  m_Layer: 3
+  m_Name: HandSlot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1784374342
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1784374341}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 151094218}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1838674094
 PrefabInstance:
   m_ObjectHideFlags: 0
