@@ -10,68 +10,60 @@ public class StatRowUI : MonoBehaviour
 
     [Header("Texts")]
     public TextMeshProUGUI labelText;
-    public TextMeshProUGUI currentValueText;
-    public TextMeshProUGUI nextValueText;
+    public TextMeshProUGUI currentValueText; // Le texte de gauche
+    public TextMeshProUGUI nextValueText;    // Le texte de droite
 
     [Header("Bar")]
     public Image barFill;
 
-    // =====================================================
-    // APPEL PUBLIC
-    // =====================================================
     public void SetStat(CharacterStats stats)
     {
-        if (stats == null)
-            return;
+        ResetUI();
+        if (stats == null) return;
 
-        Stat stat = GetStatFromCharacter(stats);
-        if (stat == null)
-            return;
+        Stat stat = ResolveStat(stats);
+        if (stat == null) return;
 
-        int currentValue = Mathf.Clamp(stat.value, 0, maxStatValue);
-        int nextValue = Mathf.Clamp(GetNextThreshold(currentValue), 1, maxStatValue);
+        // 🔥 RÉCUPÉRATION DES VALEURS RÉELLES
+        int val = stat.value;
+        int next = GetNextThreshold(val);
 
-        if (labelText != null)
-            labelText.text = GetLabel();
-
-        if (currentValueText != null)
-            currentValueText.text = currentValue.ToString();
-
-        if (nextValueText != null)
-            nextValueText.text = nextValue.ToString();
+        if (labelText != null) labelText.text = statType.ToString();
+        if (currentValueText != null) currentValueText.text = val.ToString();
+        if (nextValueText != null) nextValueText.text = next.ToString();
 
         if (barFill != null)
-            barFill.fillAmount = Mathf.Clamp01(currentValue / (float)nextValue);
-    }
-
-    // =====================================================
-    // RÉSOLUTION STAT
-    // =====================================================
-    Stat GetStatFromCharacter(CharacterStats stats)
-    {
-        return statType switch
         {
-            StatType.Force => stats.force,
-            StatType.Athletisme => stats.athletisme,
-            StatType.Resistance => stats.resistance,
-            StatType.Precision => stats.precision,
-
-            StatType.Commandement => stats.commandement,
-            StatType.Charisme => stats.charisme,
-            StatType.Chance => stats.chance,
-
-            StatType.Commerce => stats.commerce,
-            StatType.Artisanat => stats.artisanat,
-            StatType.Bucheron => stats.bucheron,
-            StatType.Mineur => stats.mineur,
-
-            _ => null
-        };
+            float ratio = (next > 0) ? (float)val / next : 0f;
+            barFill.fillAmount = Mathf.Clamp01(ratio);
+        }
     }
 
-    string GetLabel()
+    void ResetUI()
     {
-        return statType.ToString();
+        if (labelText != null) labelText.text = "";
+        if (currentValueText != null) currentValueText.text = "0";
+        if (nextValueText != null) nextValueText.text = "";
+        if (barFill != null) barFill.fillAmount = 0f;
+    }
+
+    Stat ResolveStat(CharacterStats stats)
+    {
+        switch (statType)
+        {
+            case StatType.Force: return stats.force;
+            case StatType.Athletisme: return stats.athletisme;
+            case StatType.Resistance: return stats.resistance;
+            case StatType.Precision: return stats.precision;
+            case StatType.Charisme: return stats.charisme;
+            case StatType.Commandement: return stats.commandement;
+            case StatType.Chance: return stats.chance;
+            case StatType.Mineur: return stats.mineur;
+            case StatType.Bucheron: return stats.bucheron;
+            case StatType.Artisanat: return stats.artisanat;
+            case StatType.Commerce: return stats.commerce;
+            default: return null;
+        }
     }
 
     int GetNextThreshold(int current)

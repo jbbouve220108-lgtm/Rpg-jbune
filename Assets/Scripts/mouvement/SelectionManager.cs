@@ -29,7 +29,7 @@ public class SelectionManager : MonoBehaviour
     void Update()
     {
         // =====================================================
-        // 🔒 AJOUT : BLOCAGE TOTAL SI UNE UI EST OUVERTE
+        // 🔒 BLOCAGE TOTAL SI UI MODALE
         // =====================================================
         if (UIState.IsModalOpen)
             return;
@@ -60,6 +60,18 @@ public class SelectionManager : MonoBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
+            // 🔒 CORRECTION CLÉ :
+            // Si on a cliqué sur un Recruitable, ON NE TOUCHE PAS À LA SÉLECTION
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                if (hit.collider.GetComponent<Recruitable>() != null)
+                {
+                    leftDragging = false;
+                    return;
+                }
+            }
+
             if (leftDragging)
             {
                 SelectUnitsInRectangle();
@@ -160,14 +172,10 @@ public class SelectionManager : MonoBehaviour
 
     public void SelectUnit(SelectableUnit unit)
     {
-        // =====================================================
-        // 🔒 CORRECTION UNIQUE : PAS DE SÉLECTION FANTÔME
-        // =====================================================
         unit.Select();
 
         if (!unit.isSelected)
             return;
-        // =====================================================
 
         if (!selectedUnits.Contains(unit))
         {

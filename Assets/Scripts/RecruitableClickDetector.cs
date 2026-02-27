@@ -56,10 +56,16 @@ public class RecruitableClickDetector : MonoBehaviour
             return;
         }
 
+        // 🔒 IMPORTANT : invalider toute sélection AVANT ouverture UI
+        if (SelectionManager.Instance != null)
+        {
+            SelectionManager.Instance.DeselectAll();
+        }
+
         // 🔒 Gel physique AVANT ouverture UI
         recruitable.FreezePhysicsForUI();
 
-        // 🟢 Ouverture UI centralisée
+        // 🟢 Ouverture UI avec la BONNE instance
         RecruitUI.Instance.Open(recruitable);
     }
 }

@@ -22,126 +22,73 @@ public class RecruitUI : MonoBehaviour
 
     private Recruitable currentRecruit;
 
-    // =====================================================
-    // INITIALISATION
-    // =====================================================
     void Awake()
     {
-        // 🔒 Singleton béton
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning("[RecruitUI] Instance dupliquée détruite");
             Destroy(gameObject);
             return;
         }
-
         Instance = this;
+
+        // 🔥 LE FIX : On ignore ce qui a été mis dans l'inspecteur 
+        // et on va chercher les objets REELS dans le Canvas.
+        statRows.Clear();
+        statRows.AddRange(GetComponentsInChildren<StatRowUI>(true));
 
         if (panel != null)
             panel.SetActive(false);
     }
 
-    // =====================================================
-    // OUVERTURE UI
-    // =====================================================
     public void Open(Recruitable recruit)
     {
-        if (recruit == null)
-        {
-            Debug.LogWarning("[RecruitUI] Open appelé avec recruit null");
-            return;
-        }
+        if (recruit == null) return;
 
         currentRecruit = recruit;
-
         UIState.OpenModal();
 
-        if (hudPanel != null)
-            hudPanel.SetActive(false);
+        if (hudPanel != null) hudPanel.SetActive(false);
 
-        // =========================
-        // NOM
-        // =========================
         Unit unit = recruit.GetComponent<Unit>();
         if (nameText != null)
             nameText.text = unit != null ? unit.unitName : "Inconnu";
 
-        // =========================
-        // COÛT
-        // =========================
         if (costText != null)
             costText.text = $"Cost: {recruit.recruitCost} gold";
 
-        UpdateGoldText();
-        UpdateStatsUI();
+        if (panel != null) panel.SetActive(true);
 
-        if (panel != null)
-            panel.SetActive(true);
+        CharacterStats stats = recruit.GetComponent<CharacterStats>();
+        if (stats != null)
+        {
+            stats.EnsureInitialized();
+            foreach (var row in statRows)
+            {
+                if (row != null) row.SetStat(stats);
+            }
+        }
+        UpdateGoldText();
     }
 
-    // =====================================================
-    // FERMETURE UI
-    // =====================================================
     public void Close()
     {
-        if (panel != null)
-            panel.SetActive(false);
-
-        if (currentRecruit != null)
-            currentRecruit.RestorePhysics();
-
+        if (panel != null) panel.SetActive(false);
+        if (currentRecruit != null) currentRecruit.RestorePhysics();
         currentRecruit = null;
-
-        if (hudPanel != null)
-            hudPanel.SetActive(true);
-
+        if (hudPanel != null) hudPanel.SetActive(true);
         UIState.CloseModal();
     }
 
-    // =====================================================
-    // CONFIRMATION DU RECRUTEMENT
-    // =====================================================
     public void ConfirmRecruit()
     {
-        if (currentRecruit == null)
-            return;
-
+        if (currentRecruit == null) return;
         currentRecruit.Recruit();
         UpdateGoldText();
     }
 
-    // =====================================================
-    // OR
-    // =====================================================
     void UpdateGoldText()
     {
         if (goldText != null && PlayerResources.Instance != null)
             goldText.text = $"Gold: {PlayerResources.Instance.gold}";
-    }
-
-    // =====================================================
-    // STATS
-    // =====================================================
-    void UpdateStatsUI()
-    {
-        if (currentRecruit == null)
-            return;
-
-        CharacterStats stats = currentRecruit.GetComponent<CharacterStats>();
-        if (stats == null)
-        {
-            Debug.LogWarning("[RecruitUI] CharacterStats manquant sur le recruit");
-            return;
-        }
-
-        foreach (var row in statRows)
-        {
-            if (row == null)
-                continue;
-
-            // 🔥 Adaptation STRICTEMENT nécessaire
-            // Chaque StatRowUI sait maintenant quelle stat afficher
-            row.SetStat(stats);
-        }
     }
 }
