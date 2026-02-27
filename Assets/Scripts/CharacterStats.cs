@@ -32,6 +32,7 @@ public class CharacterStats : MonoBehaviour
         if (initialized)
             return;
 
+        // 🔹 Réinitialisation propre
         force = new Stat();
         athletisme = new Stat();
         resistance = new Stat();
@@ -46,30 +47,71 @@ public class CharacterStats : MonoBehaviour
         artisanat = new Stat();
         commerce = new Stat();
 
-        RandomizeStat(force);
-        RandomizeStat(athletisme);
-        RandomizeStat(resistance);
-        RandomizeStat(precision);
+        // 🔍 Détection joueur
+        Unit unit = GetComponent<Unit>();
+        bool isPlayer = (unit != null && unit.unitType == UnitType.Player);
 
-        RandomizeStat(charisme);
-        RandomizeStat(commandement);
-        RandomizeStat(chance);
+        if (isPlayer)
+        {
+            // 🧍 JOUEUR → TOUT À 0
+            SetAllStatsToZero();
+        }
+        else
+        {
+            // 👥 COMPAGNONS / PNJ → RANDOM
+            RandomizeStat(force);
+            RandomizeStat(athletisme);
+            RandomizeStat(resistance);
+            RandomizeStat(precision);
 
-        RandomizeStat(mineur);
-        RandomizeStat(bucheron);
-        RandomizeStat(artisanat);
-        RandomizeStat(commerce);
+            RandomizeStat(charisme);
+            RandomizeStat(commandement);
+            RandomizeStat(chance);
+
+            RandomizeStat(mineur);
+            RandomizeStat(bucheron);
+            RandomizeStat(artisanat);
+            RandomizeStat(commerce);
+        }
 
         initialized = true;
     }
 
+    // =====================================================
+    // UTILS
+    // =====================================================
     void RandomizeStat(Stat stat)
     {
         if (stat == null)
             return;
 
-        // 🔥 MODIF : Max random fixé à 20
-        stat.value = Random.Range(1, 21); 
+        stat.value = Random.Range(1, 21); // comme avant
+        stat.progress = 0f;
+    }
+
+    void SetAllStatsToZero()
+    {
+        SetZero(force);
+        SetZero(athletisme);
+        SetZero(resistance);
+        SetZero(precision);
+
+        SetZero(charisme);
+        SetZero(commandement);
+        SetZero(chance);
+
+        SetZero(mineur);
+        SetZero(bucheron);
+        SetZero(artisanat);
+        SetZero(commerce);
+    }
+
+    void SetZero(Stat stat)
+    {
+        if (stat == null)
+            return;
+
+        stat.value = 0;
         stat.progress = 0f;
     }
 }
