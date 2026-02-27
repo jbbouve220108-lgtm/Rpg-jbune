@@ -22,24 +22,16 @@ public class CharacterStats : MonoBehaviour
     public Stat artisanat = new Stat();
     public Stat commerce = new Stat();
 
-    // =====================================================
-    // INITIALISATION AUTOMATIQUE
-    // =====================================================
     private void Awake()
     {
         EnsureInitialized();
     }
 
-    // =====================================================
-    // INITIALISATION SÉCURISÉE
-    // =====================================================
     public void EnsureInitialized()
     {
         if (initialized)
             return;
 
-        // 🔥 On force la création de nouvelles instances de Stat
-        // pour que chaque personnage possède ses propres données uniques.
         force = new Stat();
         athletisme = new Stat();
         resistance = new Stat();
@@ -71,17 +63,13 @@ public class CharacterStats : MonoBehaviour
         initialized = true;
     }
 
-    // =====================================================
-    // RANDOMISATION (ADAPTÉE À TON STAT)
-    // =====================================================
     void RandomizeStat(Stat stat)
     {
         if (stat == null)
             return;
 
-        int max = stat.maxValue > 0 ? stat.maxValue : 100;
-        // On génère une valeur entre 1 et la moitié du max pour le départ
-        stat.value = Random.Range(1, max / 2);
+        // 🔥 MODIF : Max random fixé à 20
+        stat.value = Random.Range(1, 21); 
         stat.progress = 0f;
     }
 }

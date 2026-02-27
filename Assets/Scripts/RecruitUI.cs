@@ -31,8 +31,7 @@ public class RecruitUI : MonoBehaviour
         }
         Instance = this;
 
-        // 🔥 LE FIX : On ignore ce qui a été mis dans l'inspecteur 
-        // et on va chercher les objets REELS dans le Canvas.
+        // Récupération dynamique des lignes
         statRows.Clear();
         statRows.AddRange(GetComponentsInChildren<StatRowUI>(true));
 

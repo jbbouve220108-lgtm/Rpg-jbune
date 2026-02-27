@@ -10,8 +10,8 @@ public class StatRowUI : MonoBehaviour
 
     [Header("Texts")]
     public TextMeshProUGUI labelText;
-    public TextMeshProUGUI currentValueText; // Le texte de gauche
-    public TextMeshProUGUI nextValueText;    // Le texte de droite
+    public TextMeshProUGUI currentValueText;
+    public TextMeshProUGUI nextValueText;
 
     [Header("Bar")]
     public Image barFill;
@@ -19,22 +19,31 @@ public class StatRowUI : MonoBehaviour
     public void SetStat(CharacterStats stats)
     {
         ResetUI();
-        if (stats == null) return;
+
+        if (stats == null)
+            return;
 
         Stat stat = ResolveStat(stats);
-        if (stat == null) return;
+        if (stat == null)
+            return;
 
-        // 🔥 RÉCUPÉRATION DES VALEURS RÉELLES
-        int val = stat.value;
-        int next = GetNextThreshold(val);
+        int currentValue = stat.value;
+        // 🔥 MODIF : Le prochain palier est maintenant le niveau actuel + 1
+        int nextThreshold = GetNextThreshold(currentValue);
 
-        if (labelText != null) labelText.text = statType.ToString();
-        if (currentValueText != null) currentValueText.text = val.ToString();
-        if (nextValueText != null) nextValueText.text = next.ToString();
+        if (labelText != null)
+            labelText.text = statType.ToString();
+
+        if (currentValueText != null)
+            currentValueText.text = currentValue.ToString();
+
+        if (nextValueText != null)
+            nextValueText.text = nextThreshold.ToString();
 
         if (barFill != null)
         {
-            float ratio = (next > 0) ? (float)val / next : 0f;
+            // Ratio de remplissage (ex: 17/18)
+            float ratio = (nextThreshold > 0) ? (float)currentValue / nextThreshold : 0f;
             barFill.fillAmount = Mathf.Clamp01(ratio);
         }
     }
@@ -51,23 +60,24 @@ public class StatRowUI : MonoBehaviour
     {
         switch (statType)
         {
-            case StatType.Force: return stats.force;
-            case StatType.Athletisme: return stats.athletisme;
-            case StatType.Resistance: return stats.resistance;
-            case StatType.Precision: return stats.precision;
-            case StatType.Charisme: return stats.charisme;
+            case StatType.Force:        return stats.force;
+            case StatType.Athletisme:   return stats.athletisme;
+            case StatType.Resistance:  return stats.resistance;
+            case StatType.Precision:   return stats.precision;
+            case StatType.Charisme:     return stats.charisme;
             case StatType.Commandement: return stats.commandement;
-            case StatType.Chance: return stats.chance;
-            case StatType.Mineur: return stats.mineur;
-            case StatType.Bucheron: return stats.bucheron;
-            case StatType.Artisanat: return stats.artisanat;
-            case StatType.Commerce: return stats.commerce;
-            default: return null;
+            case StatType.Chance:       return stats.chance;
+            case StatType.Mineur:       return stats.mineur;
+            case StatType.Bucheron:     return stats.bucheron;
+            case StatType.Artisanat:    return stats.artisanat;
+            case StatType.Commerce:     return stats.commerce;
         }
+        return null;
     }
 
+    // 🔥 MODIF : Logique de palier simplifiée
     int GetNextThreshold(int current)
     {
-        return ((current / 10) + 1) * 10;
+        return current + 1;
     }
 }
