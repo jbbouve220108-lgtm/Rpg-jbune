@@ -8,9 +8,9 @@ public enum CompanionState
 {
     Idle,
     Following,
-    Hungry,     // À faim (1er tick sans nourriture)
-    Starving,   // Famine (perte de vie)
-    Dying       // En train de mourir (priorité absolue)
+    Hungry,
+    Starving,
+    Dying
 }
 
 public class Companion : MonoBehaviour
@@ -32,23 +32,16 @@ public class Companion : MonoBehaviour
     public float minFollowDistance = 1.8f;
 
     [Header("Follow Distance")]
-    [Tooltip("Distance idéale de suivi")]
     public float followTargetDistance = 2.5f;
-
-    [Tooltip("Zone morte autour de la distance cible (anti-saccades)")]
     public float followDeadZone = 0.4f;
 
     [Header("Interaction")]
-    [Tooltip("Distance minimale pour interagir avec ce PNJ")]
     public float interactionDistance = 2.0f;
 
     // =====================================================
-    // 🆕 ATHLÉTISME (AJOUT)
+    // 🆕 ORDRE TEMPORAIRE (AJOUT)
     // =====================================================
-    [Header("Athlétisme")]
-    public float baseSpeed = 3f;
-    public float speedPerAthleticism = 0.05f;
-    public float athleticismGainPerSecond = 0.1f;
+    private bool hasTemporaryMoveOrder = false;
 
     // =====================================================
     // STATE
@@ -71,7 +64,6 @@ public class Companion : MonoBehaviour
         selectable = GetComponent<SelectableUnit>();
         agent = GetComponent<NavMeshAgent>();
 
-        // ================= PHYSIQUE =================
         if (rb != null)
         {
             rb.useGravity = true;
@@ -91,12 +83,10 @@ public class Companion : MonoBehaviour
             }
         }
 
-        // ================= COLLIDER =================
         Collider col = GetComponent<Collider>();
         if (col != null)
             col.isTrigger = false;
 
-        // ================= NAVMESH =================
         if (agent != null)
         {
             agent.enabled = isRecruited;
@@ -141,7 +131,34 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // SYNC NOM + ÉTAT NORMAL
+    // FOLLOW (UI)
+    // =====================================================
+    public void Follow()
+    {
+        if (!isRecruited)
+            return;
+
+        isFollowing = true;
+        hasTemporaryMoveOrder = false;
+    }
+
+    public void StopFollow()
+    {
+        isFollowing = false;
+        hasTemporaryMoveOrder = false;
+    }
+
+    // =====================================================
+    // FORMATION (COUPURE DÉFINITIVE)
+    // =====================================================
+    public void OnFormationOrder()
+    {
+        isFollowing = false;
+        hasTemporaryMoveOrder = false;
+    }
+
+    // =====================================================
+    // STATE SYNC
     // =====================================================
     void LateUpdate()
     {
@@ -151,7 +168,6 @@ public class Companion : MonoBehaviour
         if (companionName != unit.unitName)
             companionName = unit.unitName;
 
-        // 🔒 États critiques PRIORITAIRES (non écrasables)
         if (currentState == CompanionState.Hungry ||
             currentState == CompanionState.Starving ||
             currentState == CompanionState.Dying)
@@ -164,77 +180,31 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // FOLLOW (appel UI)
-    // =====================================================
-    public void Follow()
-    {
-        if (!isRecruited)
-            return;
-
-        isFollowing = true;
-    }
-
-    public void StopFollow()
-    {
-        isFollowing = false;
-    }
-
-    // =====================================================
-    // 🔹 AJOUT MINIMAL : APPELÉ PAR LA FORMATION
-    // =====================================================
-    public void OnFormationOrder()
-    {
-        // 👉 Une formation coupe simplement le follow
-        isFollowing = false;
-    }
-
-    // =====================================================
-    // 🆕 ATHLÉTISME : SPEED & PROGRESSION (AJOUT)
-    // =====================================================
-    void UpdateAthleticismSpeed()
-    {
-        if (agent == null)
-            return;
-
-        CharacterStats stats = GetComponent<CharacterStats>();
-        if (stats == null || stats.athletisme == null)
-            return;
-
-        agent.speed = baseSpeed + stats.athletisme.value * speedPerAthleticism;
-    }
-
-    // =====================================================
-    // LOGIQUE DE DÉPLACEMENT
+    // LOGIQUE DE DÉPLACEMENT (FINAL)
     // =====================================================
     void FixedUpdate()
     {
         if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh || player == null)
             return;
 
-        // 🆕 GAIN D’ATHLÉTISME SI MOUVEMENT
-        if (agent.velocity.sqrMagnitude > 0.01f)
+        // 🔹 DÉTECTION ORDRE TEMPORAIRE (clic gauche)
+        if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
         {
-            CharacterStats stats = GetComponent<CharacterStats>();
-            if (stats != null && stats.athletisme != null)
-            {
-                stats.athletisme.AddProgressAndCheckLevelUp(
-                    Time.fixedDeltaTime * athleticismGainPerSecond
-                );
-            }
+            hasTemporaryMoveOrder = true;
+            return;
         }
 
-        // 🆕 Mise à jour dynamique de la vitesse
-        UpdateAthleticismSpeed();
+        // 🔹 FIN D’ORDRE TEMPORAIRE → REPRISE FOLLOW
+        if (hasTemporaryMoveOrder && !agent.hasPath)
+        {
+            hasTemporaryMoveOrder = false;
+        }
 
-        // 🔥 1. ORDRE MANUEL / FORMATION ACTIF → PRIORITÉ
-        if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
-            return;
-
-        // 🔹 2. PAS EN FOLLOW → ON NE FAIT RIEN
+        // 🔹 PAS EN FOLLOW
         if (!isFollowing)
             return;
 
-        // 🔹 3. FOLLOW FLUIDE
+        // 🔹 FOLLOW FLUIDE
         float dist = Vector3.Distance(transform.position, player.position);
 
         if (Mathf.Abs(dist - followTargetDistance) <= followDeadZone)
@@ -248,7 +218,7 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // STATE API (utilisé par FoodConsumption)
+    // STATE API
     // =====================================================
     public void SetState(CompanionState newState)
     {
@@ -262,19 +232,4 @@ public class Companion : MonoBehaviour
     {
         currentState = CompanionState.Dying;
     }
-
-#if UNITY_EDITOR
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, interactionDistance);
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, followTargetDistance);
-
-        Gizmos.color = Color.gray;
-        Gizmos.DrawWireSphere(transform.position, followTargetDistance + followDeadZone);
-        Gizmos.DrawWireSphere(transform.position, followTargetDistance - followDeadZone);
-    }
-#endif
 }
