@@ -8,6 +8,12 @@ public class HybridMovement : MonoBehaviour
 
     private NavMeshAgent agent;
 
+    // =====================================================
+    // 🔥 ÉTAT DE MOUVEMENT (LECTURE EXTERNE)
+    // =====================================================
+    private bool isMoving = false;
+    public bool IsMoving() => isMoving;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -16,45 +22,53 @@ public class HybridMovement : MonoBehaviour
     void Update()
     {
         // =====================================================
-        // 🔒 AJOUT : BLOCAGE TOTAL DU DÉPLACEMENT SI UI OUVERTE
+        // 🔒 BLOCAGE TOTAL DU DÉPLACEMENT SI UI OUVERTE
         // =====================================================
         if (UIState.IsModalOpen)
+        {
+            isMoving = false;
             return;
+        }
         // =====================================================
 
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 
-        if (Mathf.Abs(h) > 0.01f || Mathf.Abs(v) > 0.01f)
+        isMoving = Mathf.Abs(h) > 0.01f || Mathf.Abs(v) > 0.01f;
+
+        if (!isMoving)
+            return;
+
+        if (agent.hasPath)
+            agent.ResetPath();
+
+        Vector3 move = new Vector3(h, 0, v).normalized;
+
+        // =====================================================
+        // 🔒 BLOCAGE SI PNJ DEVANT (LOGIQUE EXISTANTE)
+        // =====================================================
+        if (IsBlockedByRecruitable(move))
         {
-            if (agent.hasPath)
-                agent.ResetPath();
+            isMoving = false;
+            return;
+        }
+        // =====================================================
 
-            Vector3 move = new Vector3(h, 0, v).normalized;
+        agent.Move(move * keyboardSpeed * Time.deltaTime);
 
-            // =====================================================
-            // 🔒 BLOCAGE SI PNJ DEVANT (LOGIQUE EXISTANTE)
-            // =====================================================
-            if (IsBlockedByRecruitable(move))
-                return;
-            // =====================================================
-
-            agent.Move(move * keyboardSpeed * Time.deltaTime);
-
-            if (move != Vector3.zero)
-            {
-                Quaternion rot = Quaternion.LookRotation(move);
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    rot,
-                    Time.deltaTime * 10f
-                );
-            }
+        if (move != Vector3.zero)
+        {
+            Quaternion rot = Quaternion.LookRotation(move);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                rot,
+                Time.deltaTime * 10f
+            );
         }
     }
 
     // =====================================================
-    // 🔒 DÉTECTION SIMPLE D'UN PNJ DEVANT LE JOUEUR (INCHANGÉ)
+    // 🔒 DÉTECTION SIMPLE D'UN PNJ DEVANT LE JOUEUR
     // =====================================================
     bool IsBlockedByRecruitable(Vector3 moveDir)
     {
@@ -63,9 +77,7 @@ public class HybridMovement : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, blockCheckDistance))
         {
             if (hit.collider.GetComponent<Recruitable>() != null)
-            {
-                return true; // on bloque le déplacement
-            }
+                return true;
         }
 
         return false;
