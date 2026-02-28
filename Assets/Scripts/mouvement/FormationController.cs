@@ -11,6 +11,16 @@ public class FormationController : MonoBehaviour
     public float dragDistance = 10f;
     public float clickTime = 0.2f;
 
+    // =====================================================
+    // 🆕 FLÈCHE DE DIRECTION
+    // =====================================================
+    [Header("Direction Arrow")]
+    public GameObject arrowPrefab;
+    public float arrowForwardOffset = 2.5f;   // distance DEVANT la formation
+    public float arrowGroundOffset = 0.02f;   // légère élévation sol
+
+    private GameObject arrowInstance;
+
     private Vector2 rightStart;
     private float rightDownTime;
     private bool forming;
@@ -71,6 +81,13 @@ public class FormationController : MonoBehaviour
 
         forming = true;
         CreateMarkers(units.Count);
+
+        // 🆕 Création de la flèche
+        if (arrowPrefab != null && arrowInstance == null)
+        {
+            arrowInstance = Instantiate(arrowPrefab);
+            arrowInstance.SetActive(true);
+        }
     }
 
     void UpdateFormationPreview()
@@ -78,20 +95,35 @@ public class FormationController : MonoBehaviour
         if (!TryGetMouseGround(out Vector3 current))
             return;
 
-        Vector3 dir = (current - startPoint).normalized;
-        if (dir == Vector3.zero)
+        Vector3 dir = current - startPoint;
+        dir.y = 0f;
+
+        if (dir.sqrMagnitude < 0.01f)
             dir = Vector3.forward;
+
+        dir.Normalize();
 
         Vector3 right = Vector3.Cross(Vector3.up, dir);
 
         var units = SelectionManager.Instance.GetSelectedUnits();
         float half = (units.Count - 1) / 2f;
 
+        // ================= FORMATION =================
         for (int i = 0; i < units.Count; i++)
         {
             Vector3 pos = startPoint + right * (i - half) * spacing;
             markers[i].transform.position = pos + Vector3.up * 0.05f;
             markers[i].SetActive(true);
+        }
+
+        // ================= FLÈCHE (DEVANT LA FORMATION) =================
+        if (arrowInstance != null)
+        {
+            Vector3 arrowPos = startPoint + dir * arrowForwardOffset;
+            arrowPos.y += arrowGroundOffset;
+
+            arrowInstance.transform.position = arrowPos;
+            arrowInstance.transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
         }
     }
 
@@ -105,9 +137,7 @@ public class FormationController : MonoBehaviour
             Unit unit = units[i].GetComponent<Unit>();
             if (unit != null && unit.unitType == UnitType.Player)
             {
-                // 👉 MODIFICATION MINIMALE :
-                // on laisse passer le joueur vers le NavMesh,
-                // la priorité clavier est déjà gérée dans HybridMovement
+                // joueur autorisé (clavier prioritaire)
             }
 
             // 🔒 Unité non recrutée ignorée (LOGIQUE EXISTANTE)
@@ -130,6 +160,13 @@ public class FormationController : MonoBehaviour
         }
 
         ClearMarkers();
+
+        // 🆕 Suppression propre de la flèche
+        if (arrowInstance != null)
+        {
+            Destroy(arrowInstance);
+            arrowInstance = null;
+        }
     }
 
     void CreateMarkers(int count)
