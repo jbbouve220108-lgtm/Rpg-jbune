@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 public class OrderController : MonoBehaviour
 {
-    [Header("Move Marker")]
     public GameObject moveMarkerPrefab;
 
     [Header("Dispersion")]
@@ -22,22 +21,24 @@ public class OrderController : MonoBehaviour
     }
 
     // =====================================================
-    // 🖱️ LEFT CLICK — MOVE ORDER ONLY
+    // 🖱️ LEFT CLICK — MOVE
     // =====================================================
     void HandleLeftClick()
     {
         if (!Input.GetMouseButtonUp(0))
             return;
 
-        // Sécurité : SelectionManager requis
-        if (SelectionManager.Instance == null)
+        // 🔒 clic consommé par la sélection
+        if (SelectionManager.Instance.ConsumeNextLeftClick)
+        {
+            SelectionManager.Instance.ConsumeNextLeftClick = false;
             return;
+        }
 
-        List<SelectableUnit> units = SelectionManager.Instance.GetSelectedUnits();
+        var units = SelectionManager.Instance.GetSelectedUnits();
         if (units.Count == 0)
             return;
 
-        // Si la souris est sur une unité → PAS un ordre
         if (IsMouseOverSelectableUnit())
             return;
 
@@ -54,29 +55,26 @@ public class OrderController : MonoBehaviour
     {
         ShowMarker(center);
 
-        List<Vector3> destinations = ComputeSpreadPositions(center, units.Count);
+        List<Vector3> targets = ComputeSpreadPositions(center, units.Count);
 
         for (int i = 0; i < units.Count; i++)
         {
-            SelectableUnit unit = units[i];
+            NavMeshAgent agent = units[i].GetComponent<NavMeshAgent>();
+            Companion comp = units[i].GetComponent<Companion>();
+            Recruitable rec = units[i].GetComponent<Recruitable>();
 
-            Recruitable recruitable = unit.GetComponent<Recruitable>();
-            Companion companion = unit.GetComponent<Companion>();
-            NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
-
-            // Règles métier conservées
-            if (recruitable != null && (companion == null || !companion.isRecruited))
+            if (rec != null && (comp == null || !comp.isRecruited))
                 continue;
 
             if (agent == null || !agent.enabled || !agent.isOnNavMesh)
                 continue;
 
-            agent.SetDestination(destinations[i]);
+            agent.SetDestination(targets[i]);
         }
     }
 
     // =====================================================
-    // 📐 DISPERSION AUTOUR DU POINT
+    // 📐 DISPERSION
     // =====================================================
     List<Vector3> ComputeSpreadPositions(Vector3 center, int count)
     {
@@ -89,17 +87,12 @@ public class OrderController : MonoBehaviour
         }
 
         float radius = spacing * Mathf.Sqrt(count);
-        float angleStep = 360f / count;
+        float step = 360f / count;
 
         for (int i = 0; i < count; i++)
         {
-            float angle = angleStep * i * Mathf.Deg2Rad;
-            Vector3 offset = new Vector3(
-                Mathf.Cos(angle),
-                0f,
-                Mathf.Sin(angle)
-            ) * radius;
-
+            float angle = step * i * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
             Vector3 candidate = center + offset;
 
             if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, navMeshSampleRadius, NavMesh.AllAreas))
@@ -112,9 +105,9 @@ public class OrderController : MonoBehaviour
     }
 
     // =====================================================
-    // 📍 MARKER VISUEL
+    // 📍 MARKER
     // =====================================================
-    void ShowMarker(Vector3 position)
+    void ShowMarker(Vector3 pos)
     {
         if (moveMarkerPrefab == null)
             return;
@@ -122,11 +115,7 @@ public class OrderController : MonoBehaviour
         if (markerInstance != null)
             Destroy(markerInstance);
 
-        markerInstance = Instantiate(
-            moveMarkerPrefab,
-            position,
-            Quaternion.identity
-        );
+        markerInstance = Instantiate(moveMarkerPrefab, pos, Quaternion.identity);
     }
 
     // =====================================================
@@ -135,10 +124,8 @@ public class OrderController : MonoBehaviour
     bool IsMouseOverSelectableUnit()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit hit))
-            return false;
-
-        return hit.collider.GetComponentInParent<SelectableUnit>() != null;
+        return Physics.Raycast(ray, out RaycastHit hit)
+               && hit.collider.GetComponentInParent<SelectableUnit>() != null;
     }
 
     bool TryGetMouseGround(out Vector3 point)

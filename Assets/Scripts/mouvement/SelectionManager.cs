@@ -16,17 +16,16 @@ public class SelectionManager : MonoBehaviour
     private Rect selectionRect;
 
     // ─────────────────────────────
+    // FLAGS INPUT
+    // ─────────────────────────────
+    public bool ConsumeNextLeftClick { get; set; }
+    public bool BlockNextRightClickDeselect { get; set; }
+
+    // ─────────────────────────────
     // SÉLECTION
     // ─────────────────────────────
     private readonly List<SelectableUnit> selectedUnits = new();
 
-    // ─────────────────────────────
-    // FORMATION GUARD
-    // ─────────────────────────────
-    // Utilisé par FormationController
-    public bool BlockNextRightClickDeselect { get; set; }
-
-    // ─────────────────────────────
     void Awake()
     {
         Instance = this;
@@ -42,7 +41,7 @@ public class SelectionManager : MonoBehaviour
     }
 
     // =====================================================
-    // 🖱️ LEFT CLICK — SELECT / DRAG RECTANGLE
+    // 🖱️ LEFT CLICK — SELECT / DRAG
     // =====================================================
     void HandleLeftMouse()
     {
@@ -66,6 +65,7 @@ public class SelectionManager : MonoBehaviour
             if (leftDragging)
             {
                 SelectUnitsInRectangle();
+                ConsumeNextLeftClick = true; // 🔒 clé anti-déplacement
             }
             else
             {
@@ -94,7 +94,7 @@ public class SelectionManager : MonoBehaviour
     }
 
     // =====================================================
-    // 🎯 SINGLE UNIT SELECTION
+    // 🎯 SINGLE SELECTION
     // =====================================================
     void TrySelectSingleUnit()
     {
@@ -126,9 +126,7 @@ public class SelectionManager : MonoBehaviour
                 continue;
 
             if (selectionRect.Contains(screenPos, true))
-            {
                 SelectUnit(unit);
-            }
         }
     }
 
@@ -144,29 +142,20 @@ public class SelectionManager : MonoBehaviour
     // =====================================================
     // 🟩 API PUBLIQUE
     // =====================================================
-    public List<SelectableUnit> GetSelectedUnits()
-    {
-        return selectedUnits;
-    }
+    public List<SelectableUnit> GetSelectedUnits() => selectedUnits;
 
     public void SelectUnit(SelectableUnit unit)
     {
-        if (unit == null)
-            return;
-
         unit.Select();
 
-        if (!unit.isSelected)
-            return;
-
-        if (!selectedUnits.Contains(unit))
+        if (unit.isSelected && !selectedUnits.Contains(unit))
             selectedUnits.Add(unit);
     }
 
     public void DeselectAll()
     {
-        foreach (SelectableUnit unit in selectedUnits)
-            unit.Deselect();
+        foreach (SelectableUnit u in selectedUnits)
+            u.Deselect();
 
         selectedUnits.Clear();
     }
