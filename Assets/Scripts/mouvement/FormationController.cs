@@ -31,15 +31,12 @@ public class FormationController : MonoBehaviour
     private Vector3 startPoint;
     private Vector3 formationForward = Vector3.forward;
 
-    private List<GameObject> markers = new();
+    private readonly List<GameObject> markers = new();
     private GameObject flecheInstance;
 
-    // 🔥 mémorisation des rotations finales
-    private Dictionary<Transform, Vector3> finalLookDirections = new();
+    // 🔥 rotations finales
+    private readonly Dictionary<Transform, Vector3> finalLookDirections = new();
 
-    // =====================================================
-    // UPDATE
-    // =====================================================
     void Update()
     {
         if (UIState.IsModalOpen)
@@ -49,7 +46,7 @@ public class FormationController : MonoBehaviour
     }
 
     // =====================================================
-    // INPUT
+    // 🖱️ RIGHT CLICK — FORMATION
     // =====================================================
     void HandleRightMouse()
     {
@@ -58,6 +55,9 @@ public class FormationController : MonoBehaviour
             rightStart = Input.mousePosition;
             rightDownTime = Time.time;
             forming = false;
+
+            // 🔒 IMPORTANT : dès qu’on commence à appuyer
+            SelectionManager.Instance.BlockNextRightClickDeselect = true;
         }
 
         if (Input.GetMouseButton(1))
@@ -77,8 +77,11 @@ public class FormationController : MonoBehaviour
             if (forming)
             {
                 ConfirmFormation();
-                forming = false;
             }
+
+            // 🔒 IMPORTANT : on protège AUSSI le relâchement
+            SelectionManager.Instance.BlockNextRightClickDeselect = true;
+            forming = false;
         }
     }
 
@@ -131,18 +134,6 @@ public class FormationController : MonoBehaviour
     }
 
     // =====================================================
-    // ARROW
-    // =====================================================
-    void UpdateArrow()
-    {
-        if (flecheInstance == null)
-            return;
-
-        Vector3 arrowPos = startPoint + formationForward * arrowForwardOffset;
-        PlaceOnGround(flecheInstance, arrowPos, formationForward);
-    }
-
-    // =====================================================
     // CONFIRM
     // =====================================================
     void ConfirmFormation()
@@ -151,15 +142,6 @@ public class FormationController : MonoBehaviour
 
         for (int i = 0; i < units.Count; i++)
         {
-            Recruitable recruitable = units[i].GetComponent<Recruitable>();
-            Companion companion = units[i].GetComponent<Companion>();
-
-            if (recruitable != null && (companion == null || !companion.isRecruited))
-                continue;
-
-            if (companion != null)
-                companion.OnFormationOrder();
-
             NavMeshAgent agent = units[i].GetComponent<NavMeshAgent>();
             if (agent == null || !agent.enabled || !agent.isOnNavMesh)
                 continue;
@@ -167,18 +149,14 @@ public class FormationController : MonoBehaviour
             agent.stoppingDistance = 0f;
             agent.SetDestination(markers[i].transform.position);
 
-            Vector3 lookDir = formationForward;
-            lookDir.y = 0f;
-
-            if (lookDir.sqrMagnitude > 0.001f)
-                finalLookDirections[units[i].transform] = lookDir;
+            finalLookDirections[units[i].transform] = formationForward;
         }
 
         ClearAll();
     }
 
     // =====================================================
-    // ROTATION PROGRESSIVE APRÈS ARRIVÉE
+    // ROTATION APRÈS ARRIVÉE
     // =====================================================
     void LateUpdate()
     {
@@ -231,33 +209,33 @@ public class FormationController : MonoBehaviour
     }
 
     // =====================================================
-    // SOL STABLE (ANTI ENVOL)
+    // CLEANUP
     // =====================================================
-    void PlaceOnGround(GameObject obj, Vector3 logicalPosition, Vector3 forward)
+    void ClearAll()
     {
-        Vector3 rayOrigin = logicalPosition + Vector3.up * groundRayHeight;
-        int layerMask = ~LayerMask.GetMask("Ignore Raycast");
+        foreach (var m in markers)
+            Destroy(m);
 
-        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, groundRayDistance, layerMask))
-        {
-            obj.transform.position = hit.point + hit.normal * groundOffset;
+        markers.Clear();
 
-            Vector3 projectedForward = Vector3.ProjectOnPlane(forward, hit.normal);
-            if (projectedForward.sqrMagnitude < 0.001f)
-                projectedForward = Vector3.ProjectOnPlane(Vector3.forward, hit.normal);
-
-            Quaternion groundRotation = Quaternion.LookRotation(projectedForward, hit.normal);
-            obj.transform.rotation = groundRotation * Quaternion.Euler(90f, 0f, 0f);
-        }
+        if (flecheInstance != null)
+            Destroy(flecheInstance);
     }
 
     // =====================================================
-    // CREATION
+    // UTILS
     // =====================================================
+    void UpdateArrow()
+    {
+        if (flecheInstance == null)
+            return;
+
+        Vector3 arrowPos = startPoint + formationForward * arrowForwardOffset;
+        PlaceOnGround(flecheInstance, arrowPos, formationForward);
+    }
+
     void CreateMarkers(int count)
     {
-        ClearMarkers();
-
         for (int i = 0; i < count; i++)
         {
             GameObject m = Instantiate(formationMarkerPrefab);
@@ -273,32 +251,28 @@ public class FormationController : MonoBehaviour
             return;
 
         flecheInstance = Instantiate(flechePrefab);
-        flecheInstance.SetActive(true);
         flecheInstance.layer = LayerMask.NameToLayer("Ignore Raycast");
     }
 
-    // =====================================================
-    // CLEANUP
-    // =====================================================
-    void ClearMarkers()
+    void PlaceOnGround(GameObject obj, Vector3 logicalPosition, Vector3 forward)
     {
-        foreach (var m in markers)
-            Destroy(m);
+        Vector3 rayOrigin = logicalPosition + Vector3.up * groundRayHeight;
+        int layerMask = ~LayerMask.GetMask("Ignore Raycast");
 
-        markers.Clear();
+        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, groundRayDistance, layerMask))
+        {
+            obj.transform.position = hit.point + hit.normal * groundOffset;
+
+            Vector3 projectedForward = Vector3.ProjectOnPlane(forward, hit.normal);
+            if (projectedForward.sqrMagnitude < 0.001f)
+                projectedForward = Vector3.ProjectOnPlane(Vector3.forward, hit.normal);
+
+            obj.transform.rotation =
+                Quaternion.LookRotation(projectedForward, hit.normal) *
+                Quaternion.Euler(90f, 0f, 0f);
+        }
     }
 
-    void ClearAll()
-    {
-        ClearMarkers();
-
-        if (flecheInstance != null)
-            Destroy(flecheInstance);
-    }
-
-    // =====================================================
-    // RAY SOL
-    // =====================================================
     bool TryGetMouseGround(out Vector3 point)
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
