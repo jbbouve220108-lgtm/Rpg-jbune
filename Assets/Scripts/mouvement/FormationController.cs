@@ -5,21 +5,16 @@ using System.Collections.Generic;
 public class FormationController : MonoBehaviour
 {
     public GameObject formationMarkerPrefab;
+    public GameObject flecheMarkerPrefab; // 🆕 Flèche
     public float spacing = 2f;
 
     [Header("Thresholds")]
     public float dragDistance = 10f;
     public float clickTime = 0.2f;
 
-    // =====================================================
-    // 🆕 FLÈCHE DE DIRECTION
-    // =====================================================
-    [Header("Direction Arrow")]
-    public GameObject arrowPrefab;
-    public float arrowForwardOffset = 2.5f;   // distance DEVANT la formation
-    public float arrowGroundOffset = 0.02f;   // légère élévation sol
-
-    private GameObject arrowInstance;
+    [Header("Arrow Settings")]
+    public float arrowForwardOffset = 1.8f;   // distance devant la formation
+    public float arrowGroundOffset = 0.02f;   // très léger offset sol
 
     private Vector2 rightStart;
     private float rightDownTime;
@@ -27,6 +22,9 @@ public class FormationController : MonoBehaviour
 
     private Vector3 startPoint;
     private List<GameObject> markers = new List<GameObject>();
+
+    // 🆕 Flèche runtime
+    private GameObject arrowInstance;
 
     void Update()
     {
@@ -81,13 +79,7 @@ public class FormationController : MonoBehaviour
 
         forming = true;
         CreateMarkers(units.Count);
-
-        // 🆕 Création de la flèche
-        if (arrowPrefab != null && arrowInstance == null)
-        {
-            arrowInstance = Instantiate(arrowPrefab);
-            arrowInstance.SetActive(true);
-        }
+        CreateArrow();
     }
 
     void UpdateFormationPreview()
@@ -95,20 +87,18 @@ public class FormationController : MonoBehaviour
         if (!TryGetMouseGround(out Vector3 current))
             return;
 
-        Vector3 dir = current - startPoint;
-        dir.y = 0f;
-
-        if (dir.sqrMagnitude < 0.01f)
+        Vector3 dir = (current - startPoint).normalized;
+        if (dir == Vector3.zero)
             dir = Vector3.forward;
-
-        dir.Normalize();
 
         Vector3 right = Vector3.Cross(Vector3.up, dir);
 
         var units = SelectionManager.Instance.GetSelectedUnits();
         float half = (units.Count - 1) / 2f;
 
-        // ================= FORMATION =================
+        // =============================
+        // FORMATION
+        // =============================
         for (int i = 0; i < units.Count; i++)
         {
             Vector3 pos = startPoint + right * (i - half) * spacing;
@@ -116,15 +106,39 @@ public class FormationController : MonoBehaviour
             markers[i].SetActive(true);
         }
 
-        // ================= FLÈCHE (DEVANT LA FORMATION) =================
-        if (arrowInstance != null)
-        {
-            Vector3 arrowPos = startPoint + dir * arrowForwardOffset;
-            arrowPos.y += arrowGroundOffset;
+        // =============================
+        // FLÈCHE (DEVANT LA FORMATION)
+        // =============================
+        UpdateArrow(dir, right, units.Count, half);
+    }
 
-            arrowInstance.transform.position = arrowPos;
-            arrowInstance.transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
+    void UpdateArrow(Vector3 dir, Vector3 right, int unitCount, float half)
+    {
+        if (arrowInstance == null)
+            return;
+
+        // centre de la formation
+        Vector3 center =
+            startPoint +
+            right * (0 - half) * spacing +
+            right * ((unitCount - 1) * spacing * 0.5f);
+
+        // position devant
+        Vector3 arrowPos = center + dir * arrowForwardOffset;
+
+        // 🔥 Projection SOL
+        if (Physics.Raycast(arrowPos + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f))
+        {
+            arrowPos = hit.point + Vector3.up * arrowGroundOffset;
         }
+
+        arrowInstance.transform.position = arrowPos;
+
+        // 🔥 Rotation SOL (toujours visible)
+        Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
+        arrowInstance.transform.rotation = rot * Quaternion.Euler(90f, 0f, 0f);
+
+        arrowInstance.SetActive(true);
     }
 
     void ConfirmFormation()
@@ -133,21 +147,18 @@ public class FormationController : MonoBehaviour
 
         for (int i = 0; i < units.Count; i++)
         {
-            // 🔒 Le joueur ignore la formation (LOGIQUE EXISTANTE)
             Unit unit = units[i].GetComponent<Unit>();
             if (unit != null && unit.unitType == UnitType.Player)
             {
-                // joueur autorisé (clavier prioritaire)
+                // joueur ignore formation
             }
 
-            // 🔒 Unité non recrutée ignorée (LOGIQUE EXISTANTE)
             Recruitable recruitable = units[i].GetComponent<Recruitable>();
             Companion companion = units[i].GetComponent<Companion>();
 
             if (recruitable != null && (companion == null || !companion.isRecruited))
                 continue;
 
-            // 🔹 Coupure du follow (LOGIQUE EXISTANTE)
             if (companion != null)
                 companion.OnFormationOrder();
 
@@ -160,13 +171,7 @@ public class FormationController : MonoBehaviour
         }
 
         ClearMarkers();
-
-        // 🆕 Suppression propre de la flèche
-        if (arrowInstance != null)
-        {
-            Destroy(arrowInstance);
-            arrowInstance = null;
-        }
+        ClearArrow();
     }
 
     void CreateMarkers(int count)
@@ -181,12 +186,31 @@ public class FormationController : MonoBehaviour
         }
     }
 
+    void CreateArrow()
+    {
+        ClearArrow();
+
+        if (flecheMarkerPrefab == null)
+            return;
+
+        arrowInstance = Instantiate(flecheMarkerPrefab);
+        arrowInstance.SetActive(false);
+    }
+
     void ClearMarkers()
     {
         foreach (var m in markers)
             Destroy(m);
 
         markers.Clear();
+    }
+
+    void ClearArrow()
+    {
+        if (arrowInstance != null)
+            Destroy(arrowInstance);
+
+        arrowInstance = null;
     }
 
     bool TryGetMouseGround(out Vector3 point)
