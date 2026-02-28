@@ -27,6 +27,11 @@ public class Companion : MonoBehaviour
     private SelectableUnit selectable;
     private NavMeshAgent agent;
 
+    // =====================================================
+    // 🆕 ANIMATION (AJOUT)
+    // =====================================================
+    private Animator animator;
+
     [Header("Follow Settings")]
     public float followSpeed = 3f;
     public float minFollowDistance = 1.8f;
@@ -63,6 +68,15 @@ public class Companion : MonoBehaviour
         unit = GetComponent<Unit>();
         selectable = GetComponent<SelectableUnit>();
         agent = GetComponent<NavMeshAgent>();
+
+        // =====================================================
+        // 🆕 ANIMATOR INIT (AJOUT)
+        // =====================================================
+        animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+        {
+            Debug.LogError($"[Companion] Animator introuvable sur {name}");
+        }
 
         if (rb != null)
         {
@@ -191,6 +205,7 @@ public class Companion : MonoBehaviour
         if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
         {
             hasTemporaryMoveOrder = true;
+            UpdateAnimator(); // 🆕
             return;
         }
 
@@ -202,19 +217,39 @@ public class Companion : MonoBehaviour
 
         // 🔹 PAS EN FOLLOW
         if (!isFollowing)
+        {
+            UpdateAnimator(); // 🆕
             return;
+        }
 
         // 🔹 FOLLOW FLUIDE
         float dist = Vector3.Distance(transform.position, player.position);
 
         if (Mathf.Abs(dist - followTargetDistance) <= followDeadZone)
+        {
+            UpdateAnimator(); // 🆕
             return;
+        }
 
         Vector3 dir = (transform.position - player.position).normalized;
         Vector3 followPoint = player.position + dir * followTargetDistance;
 
         agent.isStopped = false;
         agent.SetDestination(followPoint);
+
+        UpdateAnimator(); // 🆕
+    }
+
+    // =====================================================
+    // 🆕 ANIMATION SYNC (AJOUT)
+    // =====================================================
+    void UpdateAnimator()
+    {
+        if (animator == null || agent == null)
+            return;
+
+        float speed = agent.velocity.magnitude;
+        animator.SetFloat("Speed", speed > 0.1f ? 1f : 0f);
     }
 
     // =====================================================
