@@ -1,34 +1,37 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
 using System.Collections.Generic;
 
 public class FormationController : MonoBehaviour
 {
     public GameObject formationMarkerPrefab;
-    public GameObject flecheMarkerPrefab; // 🆕 Flèche
+    public GameObject flechePrefab;
+
     public float spacing = 2f;
 
     [Header("Thresholds")]
     public float dragDistance = 10f;
     public float clickTime = 0.2f;
 
-    [Header("Arrow Settings")]
-    public float arrowForwardOffset = 1.8f;   // distance devant la formation
-    public float arrowGroundOffset = 0.02f;   // très léger offset sol
+    [Header("Arrow")]
+    public float arrowForwardOffset = 1.5f;
+    public float arrowGroundOffset = 0.02f;
+    public float arrowFlatRotationX = 90f; // 🔹 flèche couchée
 
     private Vector2 rightStart;
     private float rightDownTime;
     private bool forming;
 
     private Vector3 startPoint;
-    private List<GameObject> markers = new List<GameObject>();
+    private Vector3 formationForward = Vector3.forward;
 
-    // 🆕 Flèche runtime
-    private GameObject arrowInstance;
+    private List<GameObject> markers = new();
+    private GameObject flecheInstance;
 
     void Update()
     {
-        // 🔒 Blocage global si une UI est ouverte
+        // 🔒 Blocage global si UI ouverte
         if (UIState.IsModalOpen)
             return;
 
@@ -78,6 +81,7 @@ public class FormationController : MonoBehaviour
             return;
 
         forming = true;
+
         CreateMarkers(units.Count);
         CreateArrow();
     }
@@ -89,16 +93,14 @@ public class FormationController : MonoBehaviour
 
         Vector3 dir = (current - startPoint).normalized;
         if (dir == Vector3.zero)
-            dir = Vector3.forward;
+            return;
+
+        formationForward = dir;
 
         Vector3 right = Vector3.Cross(Vector3.up, dir);
-
         var units = SelectionManager.Instance.GetSelectedUnits();
         float half = (units.Count - 1) / 2f;
 
-        // =============================
-        // FORMATION
-        // =============================
         for (int i = 0; i < units.Count; i++)
         {
             Vector3 pos = startPoint + right * (i - half) * spacing;
@@ -106,39 +108,23 @@ public class FormationController : MonoBehaviour
             markers[i].SetActive(true);
         }
 
-        // =============================
-        // FLÈCHE (DEVANT LA FORMATION)
-        // =============================
-        UpdateArrow(dir, right, units.Count, half);
-    }
+        // =====================================================
+        // 🔹 FLÈCHE DEVANT LA FORMATION (COUCHÉE AU SOL)
+        // =====================================================
+        Vector3 arrowPos = startPoint + dir * arrowForwardOffset;
+        arrowPos.y += arrowGroundOffset;
 
-    void UpdateArrow(Vector3 dir, Vector3 right, int unitCount, float half)
-    {
-        if (arrowInstance == null)
-            return;
+        flecheInstance.transform.position = arrowPos;
 
-        // centre de la formation
-        Vector3 center =
-            startPoint +
-            right * (0 - half) * spacing +
-            right * ((unitCount - 1) * spacing * 0.5f);
+        // 👉 rotation à plat + direction
+        float yRotation = Quaternion.LookRotation(dir, Vector3.up).eulerAngles.y;
+        flecheInstance.transform.rotation = Quaternion.Euler(
+            arrowFlatRotationX,
+            yRotation,
+            0f
+        );
 
-        // position devant
-        Vector3 arrowPos = center + dir * arrowForwardOffset;
-
-        // 🔥 Projection SOL
-        if (Physics.Raycast(arrowPos + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f))
-        {
-            arrowPos = hit.point + Vector3.up * arrowGroundOffset;
-        }
-
-        arrowInstance.transform.position = arrowPos;
-
-        // 🔥 Rotation SOL (toujours visible)
-        Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
-        arrowInstance.transform.rotation = rot * Quaternion.Euler(90f, 0f, 0f);
-
-        arrowInstance.SetActive(true);
+        flecheInstance.SetActive(true);
     }
 
     void ConfirmFormation()
@@ -150,7 +136,7 @@ public class FormationController : MonoBehaviour
             Unit unit = units[i].GetComponent<Unit>();
             if (unit != null && unit.unitType == UnitType.Player)
             {
-                // joueur ignore formation
+                // 🔹 Le joueur ignore la formation (logique existante)
             }
 
             Recruitable recruitable = units[i].GetComponent<Recruitable>();
@@ -168,10 +154,38 @@ public class FormationController : MonoBehaviour
 
             agent.stoppingDistance = 0f;
             agent.SetDestination(markers[i].transform.position);
+
+            // 🔹 Orientation finale vers la flèche
+            StartCoroutine(RotateOnArrival(units[i].transform, formationForward));
         }
 
         ClearMarkers();
         ClearArrow();
+    }
+
+    IEnumerator RotateOnArrival(Transform unit, Vector3 forward)
+    {
+        NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
+        if (agent == null)
+            yield break;
+
+        while (agent.pathPending || agent.remainingDistance > agent.stoppingDistance + 0.05f)
+            yield return null;
+
+        agent.isStopped = true;
+
+        Quaternion startRot = unit.rotation;
+        Quaternion targetRot = Quaternion.LookRotation(forward, Vector3.up);
+
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * 5f;
+            unit.rotation = Quaternion.Slerp(startRot, targetRot, t);
+            yield return null;
+        }
+
+        agent.isStopped = false;
     }
 
     void CreateMarkers(int count)
@@ -186,17 +200,6 @@ public class FormationController : MonoBehaviour
         }
     }
 
-    void CreateArrow()
-    {
-        ClearArrow();
-
-        if (flecheMarkerPrefab == null)
-            return;
-
-        arrowInstance = Instantiate(flecheMarkerPrefab);
-        arrowInstance.SetActive(false);
-    }
-
     void ClearMarkers()
     {
         foreach (var m in markers)
@@ -205,12 +208,19 @@ public class FormationController : MonoBehaviour
         markers.Clear();
     }
 
+    void CreateArrow()
+    {
+        if (flecheInstance != null)
+            Destroy(flecheInstance);
+
+        flecheInstance = Instantiate(flechePrefab);
+        flecheInstance.SetActive(false);
+    }
+
     void ClearArrow()
     {
-        if (arrowInstance != null)
-            Destroy(arrowInstance);
-
-        arrowInstance = null;
+        if (flecheInstance != null)
+            Destroy(flecheInstance);
     }
 
     bool TryGetMouseGround(out Vector3 point)
