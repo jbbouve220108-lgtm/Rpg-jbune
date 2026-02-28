@@ -21,6 +21,9 @@ public class FormationController : MonoBehaviour
     public float groundRayHeight = 10f;
     public float groundRayDistance = 30f;
 
+    [Header("Rotation")]
+    public float rotationSpeed = 6f;
+
     private Vector2 rightStart;
     private float rightDownTime;
     private bool forming;
@@ -31,7 +34,7 @@ public class FormationController : MonoBehaviour
     private List<GameObject> markers = new();
     private GameObject flecheInstance;
 
-    // 🔥 NOUVEAU : mémorisation des rotations finales
+    // 🔥 mémorisation des rotations finales
     private Dictionary<Transform, Vector3> finalLookDirections = new();
 
     // =====================================================
@@ -164,7 +167,6 @@ public class FormationController : MonoBehaviour
             agent.stoppingDistance = 0f;
             agent.SetDestination(markers[i].transform.position);
 
-            // 🔥 On stocke la direction finale (rotation APRES arrivée)
             Vector3 lookDir = formationForward;
             lookDir.y = 0f;
 
@@ -176,7 +178,7 @@ public class FormationController : MonoBehaviour
     }
 
     // =====================================================
-    // ROTATION FINALE APRÈS ARRIVÉE
+    // ROTATION PROGRESSIVE APRÈS ARRIVÉE
     // =====================================================
     void LateUpdate()
     {
@@ -207,10 +209,20 @@ public class FormationController : MonoBehaviour
                 agent.remainingDistance <= agent.stoppingDistance + 0.05f)
             {
                 agent.updateRotation = false;
-                unit.rotation = Quaternion.LookRotation(dir);
-                agent.updateRotation = true;
 
-                done.Add(unit);
+                Quaternion targetRot = Quaternion.LookRotation(dir);
+                unit.rotation = Quaternion.Slerp(
+                    unit.rotation,
+                    targetRot,
+                    rotationSpeed * Time.deltaTime
+                );
+
+                if (Quaternion.Angle(unit.rotation, targetRot) < 1f)
+                {
+                    unit.rotation = targetRot;
+                    agent.updateRotation = true;
+                    done.Add(unit);
+                }
             }
         }
 
