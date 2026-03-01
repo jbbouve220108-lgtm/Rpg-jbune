@@ -15,8 +15,10 @@ public class CombatController : MonoBehaviour
 
     private float lastAttackTime;
 
-    // 🔒 LECTURE SEULE
-    public bool HasTarget => currentTarget != null && currentTarget.IsAlive;
+    // 🔒 état interne
+    private bool combatActive = false;
+
+    public bool HasTarget => combatActive && currentTarget != null && currentTarget.IsAlive;
 
     void Awake()
     {
@@ -26,13 +28,17 @@ public class CombatController : MonoBehaviour
 
     void Update()
     {
-        if (!HasTarget)
+        if (!combatActive)
             return;
 
-        float dist = Vector3.Distance(
-            transform.position,
-            currentTarget.transform.position
-        );
+        // 🔥 cible morte → fin combat
+        if (currentTarget == null || !currentTarget.IsAlive)
+        {
+            CancelCombat();
+            return;
+        }
+
+        float dist = Vector3.Distance(transform.position, currentTarget.transform.position);
 
         if (dist > attackRange)
         {
@@ -52,7 +58,23 @@ public class CombatController : MonoBehaviour
         if (target == null || !target.IsAlive)
             return;
 
+        combatActive = true;
         currentTarget = target;
+    }
+
+    // =====================================================
+    // 🔴 COUPURE ABSOLUE DU COMBAT
+    // =====================================================
+    public void CancelCombat()
+    {
+        combatActive = false;
+        currentTarget = null;
+
+        if (agent != null)
+        {
+            agent.isStopped = false;
+            agent.ResetPath();
+        }
     }
 
     // =====================================================
@@ -106,7 +128,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // 🔥 HIT FRAME
+    // HIT FRAME (Animation Event)
     // =====================================================
     public void ApplyDamage()
     {

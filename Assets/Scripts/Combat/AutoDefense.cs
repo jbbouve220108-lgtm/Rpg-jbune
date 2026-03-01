@@ -22,27 +22,30 @@ public class AutoDefense : MonoBehaviour
         if (combat == null)
             return;
 
-        // 🔒 si déjà en combat, on ne cherche rien
-        if (combat.HasTarget)
+        // 🔓 NE JAMAIS BLOQUER SI LA CIBLE EST MORTE
+        if (combat.HasTarget && combat.HasTarget)
+        {
+            // CombatController gère la sortie de combat
             return;
+        }
 
-        // ⏱️ limitation des checks
+        // ⏱️ Limitation des checks
         if (Time.time - lastCheckTime < checkInterval)
             return;
 
         lastCheckTime = Time.time;
 
-        // 🔹 si compagnon : seulement si idle
+        // 🧍 Compagnon : auto-aggro seulement si IDLE
         if (companion != null && companion.isFollowing)
             return;
 
-        TryAutoDefend();
+        TryAutoAggro();
     }
 
     // =====================================================
-    // AUTO DEFENSE LOGIC
+    // AGGRO PASSIVE (IDLE UNIQUEMENT)
     // =====================================================
-    void TryAutoDefend()
+    void TryAutoAggro()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, defenseRadius);
 
@@ -56,18 +59,17 @@ public class AutoDefense : MonoBehaviour
             if (target == null || !target.IsAlive)
                 continue;
 
-            // ⚔️ on riposte
             combat.SetAttackTarget(target);
             return;
         }
     }
 
     // =====================================================
-    // 🔥 APPELÉ QUAND ON PREND DES DÉGÂTS
+    // 🔥 RIPOSTE IMMÉDIATE SI ATTAQUÉ
     // =====================================================
     public void OnAttacked(GameObject attacker)
     {
-        if (combat == null || combat.HasTarget)
+        if (combat == null)
             return;
 
         CombatTarget target = attacker.GetComponent<CombatTarget>();
