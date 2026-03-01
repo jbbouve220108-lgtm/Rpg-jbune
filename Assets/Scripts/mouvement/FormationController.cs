@@ -56,7 +56,6 @@ public class FormationController : MonoBehaviour
             rightDownTime = Time.time;
             forming = false;
 
-            // 🔒 IMPORTANT : dès qu’on commence à appuyer
             SelectionManager.Instance.BlockNextRightClickDeselect = true;
         }
 
@@ -75,11 +74,8 @@ public class FormationController : MonoBehaviour
         if (Input.GetMouseButtonUp(1))
         {
             if (forming)
-            {
                 ConfirmFormation();
-            }
 
-            // 🔒 IMPORTANT : on protège AUSSI le relâchement
             SelectionManager.Instance.BlockNextRightClickDeselect = true;
             forming = false;
         }
@@ -156,7 +152,7 @@ public class FormationController : MonoBehaviour
     }
 
     // =====================================================
-    // ROTATION APRÈS ARRIVÉE
+    // ROTATION APRÈS ARRIVÉE (CORRIGÉ)
     // =====================================================
     void LateUpdate()
     {
@@ -177,7 +173,7 @@ public class FormationController : MonoBehaviour
             }
 
             NavMeshAgent agent = unit.GetComponent<NavMeshAgent>();
-            if (agent == null)
+            if (agent == null || !agent.enabled || !agent.isOnNavMesh)
             {
                 done.Add(unit);
                 continue;
