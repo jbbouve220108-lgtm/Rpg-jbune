@@ -43,18 +43,23 @@ public class AttackOrderController : MonoBehaviour
     // =====================================================
     void IssueAttackOrder(CombatTarget target)
     {
-        List<SelectableUnit> units = SelectionManager.Instance.GetSelectedUnits();
+        List<SelectableUnit> units =
+            SelectionManager.Instance.GetSelectedUnits();
+
         if (units.Count == 0)
             return;
 
         foreach (var unit in units)
         {
-            CombatController combat = unit.GetComponent<CombatController>();
+            CombatController combat =
+                unit.GetComponent<CombatController>();
+
             if (combat == null)
                 continue;
 
-            // 🔥 priorité manuelle absolue
-            combat.SetAttackTarget(target);
+            // 🔥 PRIORITÉ MANUELLE ABSOLUE
+            // (nouvelle surcharge forced = true)
+            combat.SetAttackTarget(target, forced: true);
 
             // 🔥 si c’est un compagnon → on coupe follow / formation
             Companion comp = unit.GetComponent<Companion>();

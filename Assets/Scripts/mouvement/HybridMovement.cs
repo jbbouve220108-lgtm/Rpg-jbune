@@ -35,7 +35,22 @@ public class HybridMovement : MonoBehaviour
             UpdateAnimator();
             return;
         }
+
         // =====================================================
+        // 🔒 BLOCAGE ATTAQUE (SAUF PLAYER)
+        // =====================================================
+        CombatController combat = GetComponent<CombatController>();
+        Unit unit = GetComponent<Unit>();
+
+        if (combat != null &&
+            unit != null &&
+            unit.unitType != UnitType.Player &&
+            combat.State == CombatController.CombatState.Attacking)
+        {
+            isMoving = false;
+            UpdateAnimator();
+            return;
+        }
 
         bool keyboardMoving = HandleKeyboardMovement();
         bool navmeshMoving = HandleNavMeshMovement();

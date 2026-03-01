@@ -7,9 +7,14 @@ public class Health : MonoBehaviour
 
     public bool isDead { get; private set; }
 
+    private Unit myUnit;
+    private AutoDefense autoDefense;
+
     void Awake()
     {
         currentHealth = maxHealth;
+        myUnit = GetComponent<Unit>();
+        autoDefense = GetComponent<AutoDefense>();
     }
 
     // =====================================================
@@ -17,17 +22,27 @@ public class Health : MonoBehaviour
     // =====================================================
     public void TakeDamage(float amount, GameObject attacker)
     {
-        if (isDead) 
+        if (isDead)
             return;
 
         currentHealth -= amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
 
-        // 🔥 AUTO-DÉFENSE
-        AutoDefense defense = GetComponent<AutoDefense>();
-        if (defense != null && attacker != null)
+        // =================================================
+        // 🔒 NOTIFICATION AUTO-DÉFENSE (ANTI FRIENDLY FIRE)
+        // =================================================
+        if (attacker != null &&
+            autoDefense != null &&
+            myUnit != null)
         {
-            defense.OnAttacked(attacker);
+            Unit attackerUnit = attacker.GetComponent<Unit>();
+
+            // 🔥 SEULEMENT SI L’ATTAQUANT EST UN ENNEMI
+            if (attackerUnit != null &&
+                attackerUnit.unitType != myUnit.unitType)
+            {
+                autoDefense.OnAttacked(attacker);
+            }
         }
 
         if (currentHealth <= 0)
@@ -39,7 +54,7 @@ public class Health : MonoBehaviour
     // =====================================================
     public void Heal(float amount)
     {
-        if (isDead) 
+        if (isDead)
             return;
 
         currentHealth += amount;
