@@ -378,6 +378,7 @@ GameObject:
   - component: {fileID: 151094228}
   - component: {fileID: 151094229}
   - component: {fileID: 151094230}
+  - component: {fileID: 151094231}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -617,6 +618,29 @@ MonoBehaviour:
   baseXpRequired: 10
   exponentialFactor: 1.15
   maxLevel: 100
+--- !u!136 &151094231
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 151094217}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &170525389
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4024,7 +4048,6 @@ GameObject:
   - component: {fileID: 664250342}
   - component: {fileID: 664250341}
   - component: {fileID: 664250346}
-  - component: {fileID: 664250348}
   - component: {fileID: 664250349}
   - component: {fileID: 664250350}
   - component: {fileID: 664250351}
@@ -4032,6 +4055,7 @@ GameObject:
   - component: {fileID: 664250353}
   - component: {fileID: 664250354}
   - component: {fileID: 664250355}
+  - component: {fileID: 664250356}
   m_Layer: 6
   m_Name: Mercenaire
   m_TagString: Untagged
@@ -4154,33 +4178,6 @@ MonoBehaviour:
   followDeadZone: 0.4
   interactionDistance: 8
   currentState: 0
---- !u!54 &664250348
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 664250339}
-  serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 80
-  m_CollisionDetection: 0
 --- !u!136 &664250349
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -4339,6 +4336,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xpPerSecondMoving: 1
+--- !u!54 &664250356
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 664250339}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!224 &664577541 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3307053224531817565, guid: 8ebceecde20e58f49b109014d5d1662c, type: 3}
@@ -9001,6 +9025,7 @@ GameObject:
   - component: {fileID: 1475155149}
   - component: {fileID: 1475155148}
   - component: {fileID: 1475155150}
+  - component: {fileID: 1475155151}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -9133,12 +9158,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   formationMarkerPrefab: {fileID: 6182332509595866304, guid: a51c19f2af14f664886911f4649db6a6, type: 3}
-  flecheMarkerPrefab: {fileID: 5042721871091312603, guid: a0a6a1dd5e1e32c4296fa9d3b83729c0, type: 3}
+  flechePrefab: {fileID: 5042721871091312603, guid: a0a6a1dd5e1e32c4296fa9d3b83729c0, type: 3}
   spacing: 2
   dragDistance: 10
   clickTime: 0.2
   arrowForwardOffset: 2.5
-  arrowGroundOffset: 0.02
+  groundOffset: 0.02
+  groundRayHeight: 8
+  groundRayDistance: 20
+  rotationSpeed: 6
 --- !u!114 &1475155149
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9152,7 +9180,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dragDistance: 10
-  clickTime: 0.2
 --- !u!114 &1475155150
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9169,6 +9196,21 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   maxDistance: 1000
+--- !u!114 &1475155151
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1475155139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40b7b9d90d8038f489dcac9268121697, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveMarkerPrefab: {fileID: 2908790287235483488, guid: 99f5d8ea4c67b1b4b9343d54aba43c28, type: 3}
+  spacing: 1.8
+  navMeshSampleRadius: 2.5
 --- !u!4 &1491881713 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3364130322199138758, guid: a51c19f2af14f664886911f4649db6a6, type: 3}
@@ -9944,8 +9986,8 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
+  m_UseGravity: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 80
   m_CollisionDetection: 0
