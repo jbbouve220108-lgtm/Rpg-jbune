@@ -8,7 +8,6 @@ public class SelectableUnit : MonoBehaviour
     private Renderer rend;
     private Color originalColor;
 
-    // 🔹 AJOUT : lien vers Recruitable / Companion
     private Recruitable recruitable;
     private Companion companion;
 
@@ -18,7 +17,6 @@ public class SelectableUnit : MonoBehaviour
         if (rend)
             originalColor = rend.material.color;
 
-        // 🔹 Cache des composants
         recruitable = GetComponent<Recruitable>();
         companion = GetComponent<Companion>();
     }
@@ -27,24 +25,19 @@ public class SelectableUnit : MonoBehaviour
     {
         if (selectOnStart && SelectionManager.Instance != null)
         {
-            // 🔒 Ne sélectionner au start que si autorisé
             if (CanBeSelected())
                 SelectionManager.Instance.SelectUnit(this);
         }
     }
 
-    // 🔹 NOUVEAU : règle centrale
     bool CanBeSelected()
     {
-        // Cas 1 : unité NON recruitable → toujours OK
         if (recruitable == null)
             return true;
 
-        // Cas 2 : recruitable mais PAS encore recrutée → interdit
         if (companion == null || !companion.isRecruited)
             return false;
 
-        // Cas 3 : recruitable + recrutée → OK
         return true;
     }
 
@@ -63,5 +56,14 @@ public class SelectableUnit : MonoBehaviour
         isSelected = false;
         if (rend)
             rend.material.color = originalColor;
+    }
+
+    // =====================================================
+    // 🔥 NETTOYAGE AUTO À LA MORT
+    // =====================================================
+    void OnDestroy()
+    {
+        if (SelectionManager.Instance != null)
+            SelectionManager.Instance.RemoveUnit(this);
     }
 }

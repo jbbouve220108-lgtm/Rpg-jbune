@@ -26,7 +26,6 @@ public class AttackOrderController : MonoBehaviour
             return;
         }
 
-        // Raycast sous la souris
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit))
             return;
@@ -43,25 +42,19 @@ public class AttackOrderController : MonoBehaviour
     // =====================================================
     void IssueAttackOrder(CombatTarget target)
     {
-        List<SelectableUnit> units =
-            SelectionManager.Instance.GetSelectedUnits();
-
+        List<SelectableUnit> units = SelectionManager.Instance.GetSelectedUnits();
         if (units.Count == 0)
             return;
 
         foreach (var unit in units)
         {
-            CombatController combat =
-                unit.GetComponent<CombatController>();
-
+            CombatController combat = unit.GetComponent<CombatController>();
             if (combat == null)
                 continue;
 
-            // 🔥 PRIORITÉ MANUELLE ABSOLUE
-            // (nouvelle surcharge forced = true)
-            combat.SetAttackTarget(target, forced: true);
+            // ✅ APPEL CONFORME À TON API (PAS DE "forced")
+            combat.SetAttackTarget(target);
 
-            // 🔥 si c’est un compagnon → on coupe follow / formation
             Companion comp = unit.GetComponent<Companion>();
             if (comp != null)
             {

@@ -5,25 +5,15 @@ public class SelectionManager : MonoBehaviour
 {
     public static SelectionManager Instance;
 
-    [Header("Drag Selection")]
     public float dragDistance = 10f;
 
-    // ─────────────────────────────
-    // ÉTAT SOURIS
-    // ─────────────────────────────
     private Vector2 leftStart;
     private bool leftDragging;
     private Rect selectionRect;
 
-    // ─────────────────────────────
-    // FLAGS INPUT
-    // ─────────────────────────────
     public bool ConsumeNextLeftClick { get; set; }
     public bool BlockNextRightClickDeselect { get; set; }
 
-    // ─────────────────────────────
-    // SÉLECTION
-    // ─────────────────────────────
     private readonly List<SelectableUnit> selectedUnits = new();
 
     void Awake()
@@ -36,12 +26,28 @@ public class SelectionManager : MonoBehaviour
         if (UIState.IsModalOpen)
             return;
 
+        CleanupDeadUnits();
+
         HandleLeftMouse();
         HandleRightMouse();
     }
 
     // =====================================================
-    // 🖱️ LEFT CLICK — SELECT / DRAG
+    // 🔥 NETTOYAGE DES UNITÉS MORTES
+    // =====================================================
+    void CleanupDeadUnits()
+    {
+        selectedUnits.RemoveAll(u => u == null);
+    }
+
+    public void RemoveUnit(SelectableUnit unit)
+    {
+        if (selectedUnits.Contains(unit))
+            selectedUnits.Remove(unit);
+    }
+
+    // =====================================================
+    // LEFT CLICK
     // =====================================================
     void HandleLeftMouse()
     {
@@ -65,7 +71,7 @@ public class SelectionManager : MonoBehaviour
             if (leftDragging)
             {
                 SelectUnitsInRectangle();
-                ConsumeNextLeftClick = true; // 🔒 clé anti-déplacement
+                ConsumeNextLeftClick = true;
             }
             else
             {
@@ -76,9 +82,6 @@ public class SelectionManager : MonoBehaviour
         }
     }
 
-    // =====================================================
-    // 🖱️ RIGHT CLICK — DESELECT (SI AUTORISÉ)
-    // =====================================================
     void HandleRightMouse()
     {
         if (Input.GetMouseButtonUp(1))
@@ -93,9 +96,6 @@ public class SelectionManager : MonoBehaviour
         }
     }
 
-    // =====================================================
-    // 🎯 SINGLE SELECTION
-    // =====================================================
     void TrySelectSingleUnit()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -110,9 +110,6 @@ public class SelectionManager : MonoBehaviour
         SelectUnit(unit);
     }
 
-    // =====================================================
-    // 📦 RECTANGLE SELECTION
-    // =====================================================
     void SelectUnitsInRectangle()
     {
         DeselectAll();
@@ -140,9 +137,13 @@ public class SelectionManager : MonoBehaviour
     }
 
     // =====================================================
-    // 🟩 API PUBLIQUE
+    // API
     // =====================================================
-    public List<SelectableUnit> GetSelectedUnits() => selectedUnits;
+    public List<SelectableUnit> GetSelectedUnits()
+    {
+        CleanupDeadUnits();
+        return selectedUnits;
+    }
 
     public void SelectUnit(SelectableUnit unit)
     {
@@ -155,13 +156,16 @@ public class SelectionManager : MonoBehaviour
     public void DeselectAll()
     {
         foreach (SelectableUnit u in selectedUnits)
-            u.Deselect();
+        {
+            if (u != null)
+                u.Deselect();
+        }
 
         selectedUnits.Clear();
     }
 
     // =====================================================
-    // 🧰 UTILS
+    // UTILS
     // =====================================================
     Rect GetScreenRect(Vector2 p1, Vector2 p2)
     {

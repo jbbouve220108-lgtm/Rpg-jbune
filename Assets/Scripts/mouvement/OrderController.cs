@@ -78,7 +78,7 @@ public class OrderController : MonoBehaviour
     // =====================================================
     List<Vector3> ComputeSpreadPositions(Vector3 center, int count)
     {
-        List<Vector3> points = new();
+        List<Vector3> points = new List<Vector3>();
 
         if (count == 1)
         {
@@ -92,7 +92,14 @@ public class OrderController : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             float angle = step * i * Mathf.Deg2Rad;
-            Vector3 offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
+
+            // ✅ CORRECTION SYNTAXIQUE UNIQUEMENT
+            Vector3 offset = new Vector3(
+                Mathf.Cos(angle),
+                0f,
+                Mathf.Sin(angle)
+            ) * radius;
+
             Vector3 candidate = center + offset;
 
             if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, navMeshSampleRadius, NavMesh.AllAreas))

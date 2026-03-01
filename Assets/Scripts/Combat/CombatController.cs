@@ -3,7 +3,23 @@ using UnityEngine.AI;
 
 public class CombatController : MonoBehaviour
 {
-    [Header("Combat")]
+    // =====================================================
+    // 🔥 API EXISTANTE (NE PAS CASSER)
+    // =====================================================
+    public enum CombatState
+    {
+        Idle,
+        MovingToTarget,
+        Attacking
+    }
+
+    public CombatState State { get; private set; } = CombatState.Idle;
+
+    public CombatTarget CurrentTarget => currentTarget;
+
+    // =====================================================
+    // COMBAT PARAMS
+    // =====================================================
     public float attackRange = 1.8f;
     public float attackDamage = 20f;
     public float attackCooldown = 1.2f;
@@ -12,48 +28,30 @@ public class CombatController : MonoBehaviour
     private CombatTarget currentTarget;
     private NavMeshAgent agent;
     private Animator animator;
-    private Unit myUnit;
 
     private float lastAttackTime;
-    private bool combatActive = false;
-
-    // =====================================================
-    // 🧠 ÉTATS DE COMBAT (API COMPLÈTE)
-    // =====================================================
-    public enum CombatState
-    {
-        Idle,
-        MovingToTarget,
-        Attacking,
-        ForcedAttack
-    }
-
-    private CombatState state = CombatState.Idle;
-    public CombatState State => state;
+    private bool combatActive;
 
     public bool HasTarget =>
         combatActive &&
         currentTarget != null &&
         currentTarget.IsAlive;
 
-    public CombatTarget CurrentTarget => currentTarget;
-
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
-        myUnit = GetComponent<Unit>();
     }
 
     void Update()
     {
-        if (!combatActive || currentTarget == null)
+        if (!combatActive)
         {
-            state = CombatState.Idle;
+            State = CombatState.Idle;
             return;
         }
 
-        if (!currentTarget.IsAlive)
+        if (currentTarget == null || !currentTarget.IsAlive)
         {
             CancelCombat();
             return;
@@ -66,51 +64,37 @@ public class CombatController : MonoBehaviour
 
         if (dist > attackRange)
         {
-            state = CombatState.MovingToTarget;
+            State = CombatState.MovingToTarget;
             MoveToTarget();
         }
         else
         {
-            state = CombatState.Attacking;
+            State = CombatState.Attacking;
             AttackTarget();
         }
     }
 
     // =====================================================
-    // ⚔️ SET ATTACK TARGET (API COMPATIBLE)
+    // ORDRE D’ATTAQUE
     // =====================================================
     public void SetAttackTarget(CombatTarget target)
-    {
-        SetAttackTarget(target, false);
-    }
-
-    public void SetAttackTarget(CombatTarget target, bool forced)
     {
         if (target == null || !target.IsAlive)
             return;
 
-        // 🔒 VERROU CAMP — JAMAIS UN ALLIÉ
-        Unit targetUnit = target.GetComponent<Unit>();
-        if (myUnit != null &&
-            targetUnit != null &&
-            myUnit.unitType == targetUnit.unitType)
-        {
-            return;
-        }
-
-        currentTarget = target;
         combatActive = true;
-        state = forced ? CombatState.ForcedAttack : CombatState.MovingToTarget;
+        currentTarget = target;
+        State = CombatState.MovingToTarget;
     }
 
     // =====================================================
-    // 🛑 STOP COMBAT
+    // 🔴 SORTIE PROPRE DU COMBAT
     // =====================================================
     public void CancelCombat()
     {
         combatActive = false;
         currentTarget = null;
-        state = CombatState.Idle;
+        State = CombatState.Idle;
 
         if (agent != null && agent.enabled)
         {
@@ -120,7 +104,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // 🚶 MOVE
+    // MOVE
     // =====================================================
     void MoveToTarget()
     {
@@ -132,7 +116,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // 🗡️ ATTACK
+    // ATTACK
     // =====================================================
     void AttackTarget()
     {
@@ -150,13 +134,9 @@ public class CombatController : MonoBehaviour
             animator.SetTrigger("Attack");
     }
 
-    // =====================================================
-    // 🔄 ROTATION
-    // =====================================================
     void RotateTowardsTarget()
     {
-        Vector3 dir =
-            currentTarget.transform.position - transform.position;
+        Vector3 dir = currentTarget.transform.position - transform.position;
         dir.y = 0f;
 
         if (dir.sqrMagnitude < 0.001f)
@@ -171,26 +151,15 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // 💥 HIT FRAME (DOUBLE VERROU ANTI ALLIÉ)
+    // HIT FRAME
     // =====================================================
     public void ApplyDamage()
     {
         if (!HasTarget)
             return;
 
-        Unit targetUnit = currentTarget.GetComponent<Unit>();
-        if (myUnit != null &&
-            targetUnit != null &&
-            myUnit.unitType == targetUnit.unitType)
-        {
-            CancelCombat();
-            return;
-        }
-
         Health health = currentTarget.GetComponent<Health>();
         if (health != null)
-        {
             health.TakeDamage(attackDamage, gameObject);
-        }
     }
 }
