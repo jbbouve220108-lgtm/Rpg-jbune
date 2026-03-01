@@ -8,6 +8,7 @@ public class AutoDefense : MonoBehaviour
 
     private CombatController combat;
     private Companion companion;
+    private Unit unit;
 
     private float lastCheckTime;
 
@@ -15,27 +16,29 @@ public class AutoDefense : MonoBehaviour
     {
         combat = GetComponent<CombatController>();
         companion = GetComponent<Companion>();
+        unit = GetComponent<Unit>();
     }
 
     void Update()
     {
-        if (combat == null)
+        if (combat == null || unit == null)
             return;
 
-        // 🔓 NE JAMAIS BLOQUER SI LA CIBLE EST MORTE
-        if (combat.HasTarget && combat.HasTarget)
-        {
-            // CombatController gère la sortie de combat
-            return;
-        }
-
-        // ⏱️ Limitation des checks
+        // ⏱️ throttling
         if (Time.time - lastCheckTime < checkInterval)
             return;
 
         lastCheckTime = Time.time;
 
-        // 🧍 Compagnon : auto-aggro seulement si IDLE
+        // =====================================================
+        // 👤 JOUEUR : JAMAIS D’AUTO-AGGRO
+        // =====================================================
+        if (unit.unitType == UnitType.Player)
+            return;
+
+        // =====================================================
+        // 🧍 COMPAGNON : auto-aggro UNIQUEMENT si idle
+        // =====================================================
         if (companion != null && companion.isFollowing)
             return;
 
@@ -43,7 +46,7 @@ public class AutoDefense : MonoBehaviour
     }
 
     // =====================================================
-    // AGGRO PASSIVE (IDLE UNIQUEMENT)
+    // AUTO-AGGRO PASSIF
     // =====================================================
     void TryAutoAggro()
     {
@@ -65,7 +68,7 @@ public class AutoDefense : MonoBehaviour
     }
 
     // =====================================================
-    // 🔥 RIPOSTE IMMÉDIATE SI ATTAQUÉ
+    // 🔥 RIPOSTE SI ATTAQUÉ (JOUEUR + COMPAGNON)
     // =====================================================
     public void OnAttacked(GameObject attacker)
     {
