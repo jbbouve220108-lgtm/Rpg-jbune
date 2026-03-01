@@ -16,7 +16,11 @@ public class EnemyAggro : MonoBehaviour
 
     void Update()
     {
-        if (combat == null || combat.HasTarget)
+        if (combat == null)
+            return;
+
+        // 🔒 si l’ennemi a déjà une cible vivante → on ne fait RIEN
+        if (combat.HasTarget)
             return;
 
         if (Time.time - lastCheckTime < aggroCheckInterval)
@@ -27,33 +31,45 @@ public class EnemyAggro : MonoBehaviour
         TryAcquireTarget();
     }
 
+    // =====================================================
+    // LOGIQUE AGGRO ENNEMIE
+    // =====================================================
     void TryAcquireTarget()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, aggroRadius);
 
+        CombatTarget bestTarget = null;
+        float bestDist = float.MaxValue;
+
         foreach (var hit in hits)
         {
+            // 🎯 joueur
             if (hit.CompareTag("Player"))
             {
-                TrySetTarget(hit.gameObject);
-                return;
+                bestTarget = hit.GetComponent<CombatTarget>();
+                break; // priorité absolue
             }
 
+            // 🎯 compagnon recruté
             Companion comp = hit.GetComponent<Companion>();
             if (comp != null && comp.isRecruited)
             {
-                TrySetTarget(hit.gameObject);
-                return;
+                CombatTarget t = hit.GetComponent<CombatTarget>();
+                if (t == null || !t.IsAlive)
+                    continue;
+
+                float d = Vector3.Distance(transform.position, hit.transform.position);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    bestTarget = t;
+                }
             }
         }
-    }
 
-    void TrySetTarget(GameObject obj)
-    {
-        CombatTarget target = obj.GetComponent<CombatTarget>();
-        if (target == null || !target.IsAlive)
-            return;
-
-        combat.SetAttackTarget(target);
+        if (bestTarget != null)
+        {
+            combat.SetAttackTarget(bestTarget);
+        }
     }
 }

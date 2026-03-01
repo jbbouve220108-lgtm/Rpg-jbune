@@ -69,9 +69,6 @@ public class Companion : MonoBehaviour
         selectable = GetComponent<SelectableUnit>();
         agent = GetComponent<NavMeshAgent>();
 
-        // =====================================================
-        // 🆕 ANIMATOR INIT (AJOUT)
-        // =====================================================
         animator = GetComponentInChildren<Animator>();
         if (animator == null)
         {
@@ -134,6 +131,13 @@ public class Companion : MonoBehaviour
     {
         isRecruited = true;
         companionName = newName;
+
+        // 🔥 FIX CRITIQUE : identité logique
+        if (unit != null)
+        {
+            unit.unitType = UnitType.Companion;
+            unit.unitName = newName;
+        }
 
         if (rb != null)
             rb.constraints = RigidbodyConstraints.FreezeRotation;
@@ -201,33 +205,29 @@ public class Companion : MonoBehaviour
         if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh || player == null)
             return;
 
-        // 🔹 DÉTECTION ORDRE TEMPORAIRE (clic gauche)
         if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
         {
             hasTemporaryMoveOrder = true;
-            UpdateAnimator(); // 🆕
+            UpdateAnimator();
             return;
         }
 
-        // 🔹 FIN D’ORDRE TEMPORAIRE → REPRISE FOLLOW
         if (hasTemporaryMoveOrder && !agent.hasPath)
         {
             hasTemporaryMoveOrder = false;
         }
 
-        // 🔹 PAS EN FOLLOW
         if (!isFollowing)
         {
-            UpdateAnimator(); // 🆕
+            UpdateAnimator();
             return;
         }
 
-        // 🔹 FOLLOW FLUIDE
         float dist = Vector3.Distance(transform.position, player.position);
 
         if (Mathf.Abs(dist - followTargetDistance) <= followDeadZone)
         {
-            UpdateAnimator(); // 🆕
+            UpdateAnimator();
             return;
         }
 
@@ -237,11 +237,11 @@ public class Companion : MonoBehaviour
         agent.isStopped = false;
         agent.SetDestination(followPoint);
 
-        UpdateAnimator(); // 🆕
+        UpdateAnimator();
     }
 
     // =====================================================
-    // 🆕 ANIMATION SYNC (AJOUT)
+    // 🆕 ANIMATION SYNC
     // =====================================================
     void UpdateAnimator()
     {

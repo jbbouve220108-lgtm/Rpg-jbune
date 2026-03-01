@@ -165,7 +165,10 @@ public class FoodConsumption : MonoBehaviour
 
                 Health h = companion.GetComponent<Health>();
                 if (h != null)
-                    h.TakeDamage(lifeLostWhenStarving);
+                {
+                    // 🔥 FAMINE = PAS D’ATTAQUANT
+                    h.TakeDamage(lifeLostWhenStarving, null);
+                }
             }
         }
     }

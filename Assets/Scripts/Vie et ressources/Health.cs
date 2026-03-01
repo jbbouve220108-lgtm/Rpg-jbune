@@ -12,30 +12,46 @@ public class Health : MonoBehaviour
         currentHealth = maxHealth;
     }
 
-    public void TakeDamage(float amount)
+    // =====================================================
+    // TAKE DAMAGE (AVEC ATTAQUANT)
+    // =====================================================
+    public void TakeDamage(float amount, GameObject attacker)
     {
-        if (isDead) return;
+        if (isDead) 
+            return;
 
         currentHealth -= amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        // 🔥 AUTO-DÉFENSE
+        AutoDefense defense = GetComponent<AutoDefense>();
+        if (defense != null && attacker != null)
+        {
+            defense.OnAttacked(attacker);
+        }
 
         if (currentHealth <= 0)
             Die();
     }
 
+    // =====================================================
+    // HEAL
+    // =====================================================
     public void Heal(float amount)
     {
-        if (isDead) return;
+        if (isDead) 
+            return;
 
         currentHealth += amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
     }
 
+    // =====================================================
+    // DIE
+    // =====================================================
     void Die()
     {
         isDead = true;
-
-        // Pour l’instant : destruction simple
         Destroy(gameObject);
     }
 }

@@ -15,7 +15,7 @@ public class CombatController : MonoBehaviour
 
     private float lastAttackTime;
 
-    // 🆕 LECTURE SEULE
+    // 🔒 LECTURE SEULE
     public bool HasTarget => currentTarget != null && currentTarget.IsAlive;
 
     void Awake()
@@ -45,7 +45,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // ORDRE D’ATTAQUE (API PUBLIQUE)
+    // ORDRE D’ATTAQUE
     // =====================================================
     public void SetAttackTarget(CombatTarget target)
     {
@@ -56,7 +56,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // DÉPLACEMENT
+    // MOVE
     // =====================================================
     void MoveToTarget()
     {
@@ -68,7 +68,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // ATTAQUE
+    // ATTACK
     // =====================================================
     void AttackTarget()
     {
@@ -106,13 +106,17 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // 🔥 HIT FRAME (Animation Event)
+    // 🔥 HIT FRAME
     // =====================================================
     public void ApplyDamage()
     {
         if (!HasTarget)
             return;
 
-        currentTarget.TakeDamage(attackDamage);
+        Health health = currentTarget.GetComponent<Health>();
+        if (health != null)
+        {
+            health.TakeDamage(attackDamage, gameObject);
+        }
     }
 }

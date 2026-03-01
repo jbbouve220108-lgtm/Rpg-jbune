@@ -7,28 +7,25 @@ public class Recruitable : MonoBehaviour
 
     private bool recruited = false;
 
-    // 🔒 Références physiques (EXISTANT)
     private Rigidbody rb;
     private bool wasKinematic;
 
     void Awake()
     {
-        // 🔹 On récupère le Rigidbody existant (s’il existe)
         rb = GetComponent<Rigidbody>();
     }
 
     // =====================================================
     // 👉 GESTION DU CLIC DIRECT SUR LE PERSONNAGE
-    // ⚠️ DÉSACTIVÉ VOLONTAIREMENT
-    // Le clic est désormais centralisé via RecruitableClickDetector
     // =====================================================
     void OnMouseDown()
     {
-        // Intentionnellement vide
-        // (évite le double déclenchement et le crash du singleton RecruitUI)
+        // volontairement vide
     }
 
-    // 👉 Vérification des conditions de recrutement (INCHANGÉ)
+    // =====================================================
+    // 👉 CONDITIONS DE RECRUTEMENT
+    // =====================================================
     public bool CanRecruit()
     {
         if (recruited)
@@ -40,7 +37,9 @@ public class Recruitable : MonoBehaviour
         return PlayerResources.Instance.gold >= recruitCost;
     }
 
-    // 👉 Appelé UNIQUEMENT par le bouton "Recruter" (INCHANGÉ)
+    // =====================================================
+    // 👉 RECRUTEMENT (UI)
+    // =====================================================
     public void Recruit()
     {
         if (!CanRecruit())
@@ -49,34 +48,29 @@ public class Recruitable : MonoBehaviour
         PlayerResources.Instance.gold -= recruitCost;
         recruited = true;
 
-        // 🔹 Récupération de l'Unit (INCHANGÉ)
         Unit unit = GetComponent<Unit>();
         if (unit != null)
         {
             RenameUI.Instance.Open(unit);
         }
 
-        // 🔹 Récupération du Companion (INCHANGÉ)
         Companion companion = GetComponent<Companion>();
         if (companion != null && unit != null)
         {
             companion.Recruit(unit.unitName);
         }
 
-        // =====================================================
-        // 🔥 INVALIDATION DE LA SÉLECTION (INCHANGÉ)
-        // =====================================================
         if (SelectionManager.Instance != null)
         {
             SelectionManager.Instance.DeselectAll();
         }
-        // =====================================================
 
-        // 🔹 Désactivation du composant une fois recruté (INCHANGÉ)
         this.enabled = false;
     }
 
-    // 🔓 APPELÉ LORS DE LA FERMETURE DE L’UI (INCHANGÉ)
+    // =====================================================
+    // 🔓 RESTORE PHYSICS
+    // =====================================================
     public void RestorePhysics()
     {
         if (rb != null)
@@ -86,7 +80,7 @@ public class Recruitable : MonoBehaviour
     }
 
     // =====================================================
-    // 🔒 APPELÉ AVANT L’OUVERTURE UI (par RecruitableClickDetector)
+    // 🔒 FREEZE PHYSICS FOR UI
     // =====================================================
     public void FreezePhysicsForUI()
     {
