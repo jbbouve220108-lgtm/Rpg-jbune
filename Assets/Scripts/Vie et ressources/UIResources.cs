@@ -13,14 +13,18 @@ public class UIResources : MonoBehaviour
 
     void Start()
     {
-        BindPlayerHealth();
+        TryBindHealth();
         UpdateResources();
-        UpdateHealth();
     }
 
-    void OnDestroy()
+    void OnEnable()
     {
-        UnbindPlayerHealth();
+        TryBindHealth();
+    }
+
+    void OnDisable()
+    {
+        UnbindHealth();
     }
 
     void Update()
@@ -29,9 +33,9 @@ public class UIResources : MonoBehaviour
     }
 
     // =====================================================
-    // 🔗 BIND HEALTH
+    // BIND HEALTH SAFE
     // =====================================================
-    void BindPlayerHealth()
+    void TryBindHealth()
     {
         if (playerHealth == null)
         {
@@ -42,24 +46,18 @@ public class UIResources : MonoBehaviour
 
         if (playerHealth != null)
         {
-            playerHealth.OnHealthChanged += OnHealthChanged;
+            playerHealth.OnHealthChanged -= UpdateHealth;
+            playerHealth.OnHealthChanged += UpdateHealth;
+
+            // 🔔 force refresh
+            UpdateHealth(playerHealth.currentHealth, playerHealth.maxHealth);
         }
     }
 
-    void UnbindPlayerHealth()
+    void UnbindHealth()
     {
         if (playerHealth != null)
-        {
-            playerHealth.OnHealthChanged -= OnHealthChanged;
-        }
-    }
-
-    // =====================================================
-    // CALLBACK
-    // =====================================================
-    void OnHealthChanged(float current, float max)
-    {
-        UpdateHealth();
+            playerHealth.OnHealthChanged -= UpdateHealth;
     }
 
     // =====================================================
@@ -70,19 +68,21 @@ public class UIResources : MonoBehaviour
         if (PlayerResources.Instance == null)
             return;
 
-        goldText.text = $"Gold: {PlayerResources.Instance.gold}";
-        foodText.text = $"Food: {PlayerResources.Instance.food}";
+        if (goldText != null)
+            goldText.text = $"Gold: {PlayerResources.Instance.gold}";
+
+        if (foodText != null)
+            foodText.text = $"Food: {PlayerResources.Instance.food}";
     }
 
     // =====================================================
-    // HEALTH
+    // HEALTH HUD
     // =====================================================
-    void UpdateHealth()
+    void UpdateHealth(float current, float max)
     {
-        if (playerHealth == null)
+        if (healthText == null)
             return;
 
-        healthText.text =
-            $"HP: {Mathf.Ceil(playerHealth.currentHealth)} / {playerHealth.maxHealth}";
+        healthText.text = $"HP: {Mathf.Ceil(current)} / {max}";
     }
 }
