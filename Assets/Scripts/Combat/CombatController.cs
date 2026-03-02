@@ -14,11 +14,10 @@ public class CombatController : MonoBehaviour
     }
 
     public CombatState State { get; private set; } = CombatState.Idle;
-
     public CombatTarget CurrentTarget => currentTarget;
 
     // =====================================================
-    // COMBAT PARAMS
+    // PARAMÈTRES
     // =====================================================
     public float attackRange = 1.8f;
     public float attackDamage = 20f;
@@ -32,6 +31,10 @@ public class CombatController : MonoBehaviour
     private float lastAttackTime;
     private bool combatActive;
 
+    // 🔒 optimisation NavMesh
+    private Vector3 lastTargetPosition;
+    private const float repathDistance = 0.5f;
+
     public bool HasTarget =>
         combatActive &&
         currentTarget != null &&
@@ -41,6 +44,12 @@ public class CombatController : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
+
+        if (agent != null)
+        {
+            agent.updateRotation = false;
+            agent.stoppingDistance = attackRange * 0.9f;
+        }
     }
 
     void Update()
@@ -84,11 +93,19 @@ public class CombatController : MonoBehaviour
 
         combatActive = true;
         currentTarget = target;
+        lastTargetPosition = Vector3.zero;
+
+        if (agent != null && agent.enabled)
+        {
+            agent.isStopped = false;
+            agent.stoppingDistance = attackRange * 0.9f;
+        }
+
         State = CombatState.MovingToTarget;
     }
 
     // =====================================================
-    // 🔴 SORTIE PROPRE DU COMBAT
+    // SORTIE COMBAT
     // =====================================================
     public void CancelCombat()
     {
@@ -104,15 +121,23 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // MOVE
+    // MOVE FLUIDE
     // =====================================================
     void MoveToTarget()
     {
         if (agent == null || !agent.enabled || !agent.isOnNavMesh)
             return;
 
+        Vector3 targetPos = currentTarget.transform.position;
+
+        if (Vector3.Distance(lastTargetPosition, targetPos) > repathDistance)
+        {
+            agent.SetDestination(targetPos);
+            lastTargetPosition = targetPos;
+        }
+
         agent.isStopped = false;
-        agent.SetDestination(currentTarget.transform.position);
+        RotateTowardsTarget();
     }
 
     // =====================================================

@@ -9,9 +9,6 @@ public class HybridMovement : MonoBehaviour
     private NavMeshAgent agent;
     private Animator animator;
 
-    // =====================================================
-    // 🔥 ÉTAT DE MOUVEMENT (LECTURE EXTERNE)
-    // =====================================================
     private bool isMoving = false;
     public bool IsMoving() => isMoving;
 
@@ -19,16 +16,10 @@ public class HybridMovement : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
-
-        if (animator == null)
-            Debug.LogError("[HybridMovement] Animator introuvable dans les enfants");
     }
 
     void Update()
     {
-        // =====================================================
-        // 🔒 BLOCAGE TOTAL SI UI OUVERTE
-        // =====================================================
         if (UIState.IsModalOpen)
         {
             isMoving = false;
@@ -36,12 +27,10 @@ public class HybridMovement : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // 🔒 BLOCAGE ATTAQUE (SAUF PLAYER)
-        // =====================================================
         CombatController combat = GetComponent<CombatController>();
         Unit unit = GetComponent<Unit>();
 
+        // 🔒 Combat bloque UNIQUEMENT les IA
         if (combat != null &&
             unit != null &&
             unit.unitType != UnitType.Player &&
@@ -56,13 +45,9 @@ public class HybridMovement : MonoBehaviour
         bool navmeshMoving = HandleNavMeshMovement();
 
         isMoving = keyboardMoving || navmeshMoving;
-
         UpdateAnimator();
     }
 
-    // =====================================================
-    // ⌨️ DÉPLACEMENT CLAVIER
-    // =====================================================
     bool HandleKeyboardMovement()
     {
         float h = Input.GetAxisRaw("Horizontal");
@@ -94,21 +79,14 @@ public class HybridMovement : MonoBehaviour
         return true;
     }
 
-    // =====================================================
-    // 🧭 DÉPLACEMENT NAVMESH (FORMATION / SÉLECTION)
-    // =====================================================
     bool HandleNavMeshMovement()
     {
         if (!agent.hasPath)
             return false;
 
-        // seuil très bas pour éviter les micro-oscillations
         return agent.velocity.magnitude > 0.1f;
     }
 
-    // =====================================================
-    // 🎞️ ANIMATION
-    // =====================================================
     void UpdateAnimator()
     {
         if (animator == null)
@@ -117,9 +95,6 @@ public class HybridMovement : MonoBehaviour
         animator.SetFloat("Speed", isMoving ? 1f : 0f);
     }
 
-    // =====================================================
-    // 🔒 DÉTECTION PNJ DEVANT
-    // =====================================================
     bool IsBlockedByRecruitable(Vector3 moveDir)
     {
         Ray ray = new Ray(transform.position + Vector3.up * 0.5f, moveDir);
