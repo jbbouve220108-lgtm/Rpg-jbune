@@ -28,7 +28,7 @@ public class Companion : MonoBehaviour
     private NavMeshAgent agent;
 
     // =====================================================
-    // 🆕 ANIMATION (AJOUT)
+    // ANIMATION
     // =====================================================
     private Animator animator;
 
@@ -44,7 +44,13 @@ public class Companion : MonoBehaviour
     public float interactionDistance = 2.0f;
 
     // =====================================================
-    // 🆕 ORDRE TEMPORAIRE (AJOUT)
+    // ROTATION (AJOUT CONTRÔLÉ)
+    // =====================================================
+    [Header("Rotation")]
+    public float navRotationSpeed = 10f;
+
+    // =====================================================
+    // ORDRE TEMPORAIRE
     // =====================================================
     private bool hasTemporaryMoveOrder = false;
 
@@ -54,7 +60,6 @@ public class Companion : MonoBehaviour
     [Header("State")]
     [SerializeField]
     private CompanionState currentState = CompanionState.Idle;
-
     public CompanionState CurrentState => currentState;
 
     // =====================================================
@@ -68,12 +73,7 @@ public class Companion : MonoBehaviour
         unit = GetComponent<Unit>();
         selectable = GetComponent<SelectableUnit>();
         agent = GetComponent<NavMeshAgent>();
-
         animator = GetComponentInChildren<Animator>();
-        if (animator == null)
-        {
-            Debug.LogError($"[Companion] Animator introuvable sur {name}");
-        }
 
         if (rb != null)
         {
@@ -105,6 +105,9 @@ public class Companion : MonoBehaviour
             agent.acceleration = followSpeed * 4f;
             agent.angularSpeed = 720f;
             agent.stoppingDistance = followTargetDistance - 0.1f;
+
+            // 🔥 important : rotation manuelle
+            agent.updateRotation = false;
         }
     }
 
@@ -132,7 +135,6 @@ public class Companion : MonoBehaviour
         isRecruited = true;
         companionName = newName;
 
-        // 🔥 FIX CRITIQUE : identité logique
         if (unit != null)
         {
             unit.unitType = UnitType.Companion;
@@ -167,7 +169,7 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // FORMATION (COUPURE DÉFINITIVE)
+    // FORMATION
     // =====================================================
     public void OnFormationOrder()
     {
@@ -198,14 +200,28 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // LOGIQUE DE DÉPLACEMENT (FINAL)
+    // LOGIQUE DE DÉPLACEMENT
     // =====================================================
     void FixedUpdate()
     {
-        if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh || player == null)
+        if (!isRecruited || agent == null || !agent.enabled || !agent.isOnNavMesh)
             return;
 
-        if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
+        CombatController combat = GetComponent<CombatController>();
+
+        bool isMoving =
+            agent.hasPath &&
+            agent.remainingDistance > agent.stoppingDistance;
+
+        // 🔥 ROTATION NAVMESH AJOUTÉE (SANS IMPACT COMBAT)
+        if (isMoving &&
+            (combat == null ||
+             combat.State != CombatController.CombatState.Attacking))
+        {
+            RotateTowardsVelocity();
+        }
+
+        if (isMoving)
         {
             hasTemporaryMoveOrder = true;
             UpdateAnimator();
@@ -213,11 +229,9 @@ public class Companion : MonoBehaviour
         }
 
         if (hasTemporaryMoveOrder && !agent.hasPath)
-        {
             hasTemporaryMoveOrder = false;
-        }
 
-        if (!isFollowing)
+        if (!isFollowing || player == null)
         {
             UpdateAnimator();
             return;
@@ -241,15 +255,36 @@ public class Companion : MonoBehaviour
     }
 
     // =====================================================
-    // 🆕 ANIMATION SYNC
+    // ROTATION (AJOUT)
+    // =====================================================
+    void RotateTowardsVelocity()
+    {
+        Vector3 vel = agent.velocity;
+        vel.y = 0f;
+
+        if (vel.sqrMagnitude < 0.01f)
+            return;
+
+        Quaternion targetRot = Quaternion.LookRotation(vel);
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRot,
+            Time.deltaTime * navRotationSpeed
+        );
+    }
+
+    // =====================================================
+    // ANIMATION
     // =====================================================
     void UpdateAnimator()
     {
         if (animator == null || agent == null)
             return;
 
-        float speed = agent.velocity.magnitude;
-        animator.SetFloat("Speed", speed > 0.1f ? 1f : 0f);
+        animator.SetFloat(
+            "Speed",
+            agent.velocity.magnitude > 0.1f ? 1f : 0f
+        );
     }
 
     // =====================================================

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 public class Health : MonoBehaviour
 {
@@ -10,11 +11,18 @@ public class Health : MonoBehaviour
     private Unit myUnit;
     private AutoDefense autoDefense;
 
+    // =====================================================
+    // 🆕 EVENT (AJOUT)
+    // =====================================================
+    public event Action<float, float> OnHealthChanged;
+
     void Awake()
     {
         currentHealth = maxHealth;
         myUnit = GetComponent<Unit>();
         autoDefense = GetComponent<AutoDefense>();
+
+        NotifyHealthChanged();
     }
 
     // =====================================================
@@ -28,22 +36,20 @@ public class Health : MonoBehaviour
         currentHealth -= amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
 
-        // =================================================
-        // 🔒 NOTIFICATION AUTO-DÉFENSE (ANTI FRIENDLY FIRE)
-        // =================================================
+        // 🔒 notification auto-défense
         if (attacker != null &&
             autoDefense != null &&
             myUnit != null)
         {
             Unit attackerUnit = attacker.GetComponent<Unit>();
-
-            // 🔥 SEULEMENT SI L’ATTAQUANT EST UN ENNEMI
             if (attackerUnit != null &&
                 attackerUnit.unitType != myUnit.unitType)
             {
                 autoDefense.OnAttacked(attacker);
             }
         }
+
+        NotifyHealthChanged();
 
         if (currentHealth <= 0)
             Die();
@@ -59,6 +65,8 @@ public class Health : MonoBehaviour
 
         currentHealth += amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        NotifyHealthChanged();
     }
 
     // =====================================================
@@ -67,6 +75,15 @@ public class Health : MonoBehaviour
     void Die()
     {
         isDead = true;
+        NotifyHealthChanged();
         Destroy(gameObject);
+    }
+
+    // =====================================================
+    // 🆕 NOTIFY
+    // =====================================================
+    void NotifyHealthChanged()
+    {
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 }
