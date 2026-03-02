@@ -3,9 +3,6 @@ using UnityEngine.AI;
 
 public class CombatController : MonoBehaviour
 {
-    // =====================================================
-    // API EXISTANTE
-    // =====================================================
     public enum CombatState
     {
         Idle,
@@ -16,24 +13,16 @@ public class CombatController : MonoBehaviour
     public CombatState State { get; private set; } = CombatState.Idle;
     public CombatTarget CurrentTarget => currentTarget;
 
-    // =====================================================
-    // PARAMÈTRES EXISTANTS
-    // =====================================================
     public float attackRange = 1.8f;
     public float attackDamage = 20f;
     public float attackCooldown = 1.2f;
     public float rotationSpeed = 10f;
 
-    // =====================================================
-    // AJOUTS DÉFENSIFS (AUCUN COMPORTEMENT NOUVEAU)
-    // =====================================================
-    [Header("Hit Validation")]
-    public float hitAngleTolerance = 70f;   // champ frontal réaliste
-    public float hitRangeTolerance = 0.4f;  // marge d’erreur animation
+    [Header("Disengage")]
+    public float disengageDuration = 3f;
 
-    // =====================================================
-    // INTERNES
-    // =====================================================
+    private float disengageUntilTime = 0f;
+
     private CombatTarget currentTarget;
     private NavMeshAgent agent;
     private Animator animator;
@@ -71,7 +60,7 @@ public class CombatController : MonoBehaviour
 
         if (currentTarget == null || !currentTarget.IsAlive)
         {
-            CancelCombat();
+            CancelCombatInternal();
             return;
         }
 
@@ -97,6 +86,10 @@ public class CombatController : MonoBehaviour
     // =====================================================
     public void SetAttackTarget(CombatTarget target)
     {
+        // 🔒 blocage uniquement si désengagement actif
+        if (Time.time < disengageUntilTime)
+            return;
+
         if (target == null || !target.IsAlive)
             return;
 
@@ -114,7 +107,21 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // DÉSENGAGEMENT JOUEUR (EXISTANT)
+    // 🔥 APPELÉ QUAND ON SE FAIT ATTAQUER
+    // =====================================================
+    public void OnAttacked(CombatTarget attacker)
+    {
+        // une attaque subie annule la fuite
+        disengageUntilTime = 0f;
+
+        if (attacker == null || !attacker.IsAlive)
+            return;
+
+        SetAttackTarget(attacker);
+    }
+
+    // =====================================================
+    // DÉSENGAGEMENT VOLONTAIRE
     // =====================================================
     public void CancelCombatByPlayer()
     {
@@ -122,13 +129,17 @@ public class CombatController : MonoBehaviour
         if (unit == null || unit.unitType != UnitType.Player)
             return;
 
-        CancelCombat();
+        disengageUntilTime = Time.time + disengageDuration;
+        CancelCombatInternal();
     }
 
-    // =====================================================
-    // SORTIE COMBAT
-    // =====================================================
     public void CancelCombat()
+    {
+        disengageUntilTime = Time.time + disengageDuration;
+        CancelCombatInternal();
+    }
+
+    void CancelCombatInternal()
     {
         combatActive = false;
         currentTarget = null;
@@ -141,9 +152,6 @@ public class CombatController : MonoBehaviour
         }
     }
 
-    // =====================================================
-    // DÉPLACEMENT
-    // =====================================================
     void MoveToTarget()
     {
         if (agent == null || !agent.enabled || !agent.isOnNavMesh)
@@ -161,9 +169,6 @@ public class CombatController : MonoBehaviour
         RotateTowardsTarget();
     }
 
-    // =====================================================
-    // ATTAQUE
-    // =====================================================
     void AttackTarget()
     {
         if (agent != null)
@@ -180,9 +185,6 @@ public class CombatController : MonoBehaviour
             animator.SetTrigger("Attack");
     }
 
-    // =====================================================
-    // ROTATION
-    // =====================================================
     void RotateTowardsTarget()
     {
         Vector3 dir = currentTarget.transform.position - transform.position;
@@ -199,29 +201,9 @@ public class CombatController : MonoBehaviour
         );
     }
 
-    // =====================================================
-    // HIT FRAME (SÉCURISÉ)
-    // =====================================================
     public void ApplyDamage()
     {
         if (!HasTarget)
-            return;
-
-        // 🔒 VALIDATION DISTANCE
-        float dist = Vector3.Distance(
-            transform.position,
-            currentTarget.transform.position
-        );
-
-        if (dist > attackRange + hitRangeTolerance)
-            return;
-
-        // 🔒 VALIDATION ANGLE (devant moi)
-        Vector3 toTarget =
-            (currentTarget.transform.position - transform.position).normalized;
-        float angle = Vector3.Angle(transform.forward, toTarget);
-
-        if (angle > hitAngleTolerance)
             return;
 
         Health health = currentTarget.GetComponent<Health>();

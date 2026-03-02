@@ -7,6 +7,9 @@ public class EnemyAggro : MonoBehaviour
     public float assistRadius = 5f;    // entraide
     public float checkInterval = 0.5f;
 
+    [Header("Smart Retargeting (AJOUT)")]
+    public float retargetDistanceThreshold = 1.2f; // différence significative
+
     private CombatController combat;
     private Unit unit;
 
@@ -32,9 +35,12 @@ public class EnemyAggro : MonoBehaviour
         if (TryFightMyAttacker())
             return;
 
-        // 🔒 si déjà en combat → on ne change PLUS de cible
+        // 🔒 si déjà en combat → on peut réévaluer intelligemment
         if (combat.HasTarget)
+        {
+            TrySwitchToCloserThreat();
             return;
+        }
 
         // 🟠 PRIORITÉ 2 — ENTRAIDE
         if (TryAssistAlly())
@@ -164,6 +170,59 @@ public class EnemyAggro : MonoBehaviour
         if (closest != null)
         {
             combat.SetAttackTarget(closest);
+        }
+    }
+
+    // =====================================================
+    // 🆕 RÉÉVALUATION INTELLIGENTE (AJOUT)
+    // =====================================================
+    void TrySwitchToCloserThreat()
+    {
+        CombatTarget current = combat.CurrentTarget;
+        if (current == null)
+            return;
+
+        float currentDist = Vector3.Distance(
+            transform.position,
+            current.transform.position
+        );
+
+        Collider[] hits = Physics.OverlapSphere(
+            transform.position,
+            assistRadius
+        );
+
+        CombatTarget bestCandidate = null;
+        float bestDist = currentDist;
+
+        foreach (var hit in hits)
+        {
+            CombatTarget target = hit.GetComponent<CombatTarget>();
+            if (target == null || !target.IsAlive)
+                continue;
+
+            if (!IsEnemy(hit.gameObject))
+                continue;
+
+            if (target == current)
+                continue;
+
+            float dist = Vector3.Distance(
+                transform.position,
+                hit.transform.position
+            );
+
+            // seulement si nettement plus proche
+            if (dist + retargetDistanceThreshold < bestDist)
+            {
+                bestDist = dist;
+                bestCandidate = target;
+            }
+        }
+
+        if (bestCandidate != null)
+        {
+            combat.SetAttackTarget(bestCandidate);
         }
     }
 
