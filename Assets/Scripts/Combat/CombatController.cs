@@ -3,6 +3,9 @@ using UnityEngine.AI;
 
 public class CombatController : MonoBehaviour
 {
+    // =====================================================
+    // API EXISTANTE
+    // =====================================================
     public enum CombatState
     {
         Idle,
@@ -13,16 +16,25 @@ public class CombatController : MonoBehaviour
     public CombatState State { get; private set; } = CombatState.Idle;
     public CombatTarget CurrentTarget => currentTarget;
 
+    // =====================================================
+    // PARAMÈTRES EXISTANTS
+    // =====================================================
     public float attackRange = 1.8f;
     public float attackDamage = 20f;
     public float attackCooldown = 1.2f;
     public float rotationSpeed = 10f;
 
+    // =====================================================
+    // DÉSENGAGEMENT
+    // =====================================================
     [Header("Disengage")]
     public float disengageDuration = 3f;
 
     private float disengageUntilTime = 0f;
 
+    // =====================================================
+    // INTERNES
+    // =====================================================
     private CombatTarget currentTarget;
     private NavMeshAgent agent;
     private Animator animator;
@@ -82,16 +94,15 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // ORDRE D’ATTAQUE
+    // ORDRE D’ATTAQUE (INTENTION VOLONTAIRE)
     // =====================================================
     public void SetAttackTarget(CombatTarget target)
     {
-        // 🔒 blocage uniquement si désengagement actif
-        if (Time.time < disengageUntilTime)
-            return;
-
         if (target == null || !target.IsAlive)
             return;
+
+        // 🔥 INTENTION FORTE → annule toute fuite
+        disengageUntilTime = 0f;
 
         combatActive = true;
         currentTarget = target;
@@ -107,11 +118,11 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // 🔥 APPELÉ QUAND ON SE FAIT ATTAQUER
+    // APPELÉ QUAND ON SE FAIT ATTAQUER
     // =====================================================
     public void OnAttacked(CombatTarget attacker)
     {
-        // une attaque subie annule la fuite
+        // une attaque subie annule aussi la fuite
         disengageUntilTime = 0f;
 
         if (attacker == null || !attacker.IsAlive)
@@ -152,6 +163,9 @@ public class CombatController : MonoBehaviour
         }
     }
 
+    // =====================================================
+    // MOVE
+    // =====================================================
     void MoveToTarget()
     {
         if (agent == null || !agent.enabled || !agent.isOnNavMesh)
@@ -169,6 +183,9 @@ public class CombatController : MonoBehaviour
         RotateTowardsTarget();
     }
 
+    // =====================================================
+    // ATTAQUE
+    // =====================================================
     void AttackTarget()
     {
         if (agent != null)
@@ -185,6 +202,9 @@ public class CombatController : MonoBehaviour
             animator.SetTrigger("Attack");
     }
 
+    // =====================================================
+    // ROTATION
+    // =====================================================
     void RotateTowardsTarget()
     {
         Vector3 dir = currentTarget.transform.position - transform.position;
@@ -201,6 +221,9 @@ public class CombatController : MonoBehaviour
         );
     }
 
+    // =====================================================
+    // HIT FRAME
+    // =====================================================
     public void ApplyDamage()
     {
         if (!HasTarget)
