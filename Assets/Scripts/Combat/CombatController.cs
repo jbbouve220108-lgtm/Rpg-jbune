@@ -29,6 +29,7 @@ public class CombatController : MonoBehaviour
     // =====================================================
     [Header("Disengage")]
     public float disengageDuration = 3f;
+    public float disengageDistance = 12f; // 🆕 distance de rupture
 
     private float disengageUntilTime = 0f;
 
@@ -50,6 +51,9 @@ public class CombatController : MonoBehaviour
         currentTarget != null &&
         currentTarget.IsAlive;
 
+    // =====================================================
+    // UNITY
+    // =====================================================
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -72,14 +76,23 @@ public class CombatController : MonoBehaviour
 
         if (currentTarget == null || !currentTarget.IsAlive)
         {
-            CancelCombatInternal();
+            CancelCombatInternal(true);
             return;
         }
 
-        float dist = Vector3.Distance(
+        // 🧨 RUPTURE PAR DISTANCE (RESTAURÉE)
+        float hardDist = Vector3.Distance(
             transform.position,
             currentTarget.transform.position
         );
+
+        if (hardDist > disengageDistance)
+        {
+            CancelCombatInternal(true);
+            return;
+        }
+
+        float dist = hardDist;
 
         if (dist > attackRange)
         {
@@ -101,7 +114,7 @@ public class CombatController : MonoBehaviour
         if (target == null || !target.IsAlive)
             return;
 
-        // 🔥 INTENTION FORTE → annule toute fuite
+        // 🔥 intention volontaire → annule toute fuite
         disengageUntilTime = 0f;
 
         combatActive = true;
@@ -122,7 +135,7 @@ public class CombatController : MonoBehaviour
     // =====================================================
     public void OnAttacked(CombatTarget attacker)
     {
-        // une attaque subie annule aussi la fuite
+        // une attaque subie annule la fuite
         disengageUntilTime = 0f;
 
         if (attacker == null || !attacker.IsAlive)
@@ -141,20 +154,29 @@ public class CombatController : MonoBehaviour
             return;
 
         disengageUntilTime = Time.time + disengageDuration;
-        CancelCombatInternal();
+        CancelCombatInternal(false);
     }
 
     public void CancelCombat()
     {
         disengageUntilTime = Time.time + disengageDuration;
-        CancelCombatInternal();
+        CancelCombatInternal(false);
     }
 
-    void CancelCombatInternal()
+    // =====================================================
+    // SORTIE COMBAT
+    // =====================================================
+    void CancelCombatInternal(bool hardDisengage)
     {
         combatActive = false;
         currentTarget = null;
         State = CombatState.Idle;
+
+        if (hardDisengage)
+        {
+            // 🔒 fuite définitive tant que le joueur ne réengage pas
+            disengageUntilTime = Time.time + disengageDuration;
+        }
 
         if (agent != null && agent.enabled)
         {
@@ -207,6 +229,9 @@ public class CombatController : MonoBehaviour
     // =====================================================
     void RotateTowardsTarget()
     {
+        if (!combatActive || currentTarget == null)
+            return;
+
         Vector3 dir = currentTarget.transform.position - transform.position;
         dir.y = 0f;
 
