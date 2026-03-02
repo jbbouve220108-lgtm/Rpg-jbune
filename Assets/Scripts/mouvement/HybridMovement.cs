@@ -5,6 +5,7 @@ public class HybridMovement : MonoBehaviour
 {
     public float keyboardSpeed = 4f;
     public float blockCheckDistance = 0.8f;
+    public float navRotationSpeed = 10f;
 
     private NavMeshAgent agent;
     private Animator animator;
@@ -44,10 +45,22 @@ public class HybridMovement : MonoBehaviour
         bool keyboardMoving = HandleKeyboardMovement();
         bool navmeshMoving = HandleNavMeshMovement();
 
+        // 🔥 rotation automatique NavMesh POUR LE JOUEUR
+        if (!keyboardMoving &&
+            navmeshMoving &&
+            unit != null &&
+            unit.unitType == UnitType.Player)
+        {
+            RotateTowardsVelocity();
+        }
+
         isMoving = keyboardMoving || navmeshMoving;
         UpdateAnimator();
     }
 
+    // =====================================================
+    // ⌨️ CLAVIER
+    // =====================================================
     bool HandleKeyboardMovement()
     {
         float h = Input.GetAxisRaw("Horizontal");
@@ -79,6 +92,9 @@ public class HybridMovement : MonoBehaviour
         return true;
     }
 
+    // =====================================================
+    // 🧭 NAVMESH
+    // =====================================================
     bool HandleNavMeshMovement()
     {
         if (!agent.hasPath)
@@ -87,6 +103,25 @@ public class HybridMovement : MonoBehaviour
         return agent.velocity.magnitude > 0.1f;
     }
 
+    void RotateTowardsVelocity()
+    {
+        Vector3 vel = agent.velocity;
+        vel.y = 0f;
+
+        if (vel.sqrMagnitude < 0.01f)
+            return;
+
+        Quaternion targetRot = Quaternion.LookRotation(vel);
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRot,
+            Time.deltaTime * navRotationSpeed
+        );
+    }
+
+    // =====================================================
+    // 🎞️ ANIMATION
+    // =====================================================
     void UpdateAnimator()
     {
         if (animator == null)
@@ -95,6 +130,9 @@ public class HybridMovement : MonoBehaviour
         animator.SetFloat("Speed", isMoving ? 1f : 0f);
     }
 
+    // =====================================================
+    // 🔒 BLOCAGE PNJ
+    // =====================================================
     bool IsBlockedByRecruitable(Vector3 moveDir)
     {
         Ray ray = new Ray(transform.position + Vector3.up * 0.5f, moveDir);
