@@ -11,9 +11,7 @@ public class Health : MonoBehaviour
     private Unit myUnit;
     private AutoDefense autoDefense;
 
-    // =====================================================
-    // 🆕 EVENT (AJOUT)
-    // =====================================================
+    // 🆕 EVENT (EXISTANT)
     public event Action<float, float> OnHealthChanged;
 
     void Awake()
@@ -33,10 +31,25 @@ public class Health : MonoBehaviour
         if (isDead)
             return;
 
+        // 🔒 PROTECTION : UN COUP = UNE CIBLE
+        if (attacker != null)
+        {
+            CombatController combat = attacker.GetComponent<CombatController>();
+            if (combat != null)
+            {
+                CombatTarget expectedTarget = combat.CurrentTarget;
+                if (expectedTarget != null &&
+                    expectedTarget.gameObject != gameObject)
+                {
+                    return; // ❌ pas la bonne cible
+                }
+            }
+        }
+
         currentHealth -= amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
 
-        // 🔒 notification auto-défense
+        // 🔒 notification auto-défense (inchangé)
         if (attacker != null &&
             autoDefense != null &&
             myUnit != null)
@@ -80,7 +93,7 @@ public class Health : MonoBehaviour
     }
 
     // =====================================================
-    // 🆕 NOTIFY
+    // NOTIFY
     // =====================================================
     void NotifyHealthChanged()
     {
