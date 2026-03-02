@@ -3,9 +3,6 @@ using UnityEngine.AI;
 
 public class CombatController : MonoBehaviour
 {
-    // =====================================================
-    // 🔥 API EXISTANTE (NE PAS CASSER)
-    // =====================================================
     public enum CombatState
     {
         Idle,
@@ -16,9 +13,6 @@ public class CombatController : MonoBehaviour
     public CombatState State { get; private set; } = CombatState.Idle;
     public CombatTarget CurrentTarget => currentTarget;
 
-    // =====================================================
-    // PARAMÈTRES
-    // =====================================================
     public float attackRange = 1.8f;
     public float attackDamage = 20f;
     public float attackCooldown = 1.2f;
@@ -31,7 +25,7 @@ public class CombatController : MonoBehaviour
     private float lastAttackTime;
     private bool combatActive;
 
-    // 🔒 optimisation NavMesh
+    // 🔒 optimisation
     private Vector3 lastTargetPosition;
     private const float repathDistance = 0.5f;
 
@@ -105,7 +99,19 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // SORTIE COMBAT
+    // 🔥 DÉSENGAGEMENT JOUEUR (AJOUT)
+    // =====================================================
+    public void CancelCombatByPlayer()
+    {
+        Unit unit = GetComponent<Unit>();
+        if (unit == null || unit.unitType != UnitType.Player)
+            return;
+
+        CancelCombat();
+    }
+
+    // =====================================================
+    // SORTIE COMBAT GÉNÉRALE
     // =====================================================
     public void CancelCombat()
     {
@@ -121,7 +127,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // MOVE FLUIDE
+    // MOVE
     // =====================================================
     void MoveToTarget()
     {

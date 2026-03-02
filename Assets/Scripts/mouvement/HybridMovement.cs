@@ -5,11 +5,16 @@ public class HybridMovement : MonoBehaviour
 {
     public float keyboardSpeed = 4f;
     public float blockCheckDistance = 0.8f;
+
+    // 🆕 rotation navmesh (AJOUT)
     public float navRotationSpeed = 10f;
 
     private NavMeshAgent agent;
     private Animator animator;
 
+    // =====================================================
+    // 🔥 ÉTAT DE MOUVEMENT (LECTURE EXTERNE)
+    // =====================================================
     private bool isMoving = false;
     public bool IsMoving() => isMoving;
 
@@ -17,10 +22,16 @@ public class HybridMovement : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
+
+        if (animator == null)
+            Debug.LogError("[HybridMovement] Animator introuvable dans les enfants");
     }
 
     void Update()
     {
+        // =====================================================
+        // 🔒 BLOCAGE TOTAL SI UI OUVERTE
+        // =====================================================
         if (UIState.IsModalOpen)
         {
             isMoving = false;
@@ -28,10 +39,12 @@ public class HybridMovement : MonoBehaviour
             return;
         }
 
+        // =====================================================
+        // 🔒 BLOCAGE ATTAQUE (SAUF PLAYER)
+        // =====================================================
         CombatController combat = GetComponent<CombatController>();
         Unit unit = GetComponent<Unit>();
 
-        // 🔒 Combat bloque UNIQUEMENT les IA
         if (combat != null &&
             unit != null &&
             unit.unitType != UnitType.Player &&
@@ -45,7 +58,9 @@ public class HybridMovement : MonoBehaviour
         bool keyboardMoving = HandleKeyboardMovement();
         bool navmeshMoving = HandleNavMeshMovement();
 
-        // 🔥 rotation automatique NavMesh POUR LE JOUEUR
+        // =====================================================
+        // 🧭 ROTATION NAVMESH POUR LE JOUEUR (AJOUT)
+        // =====================================================
         if (!keyboardMoving &&
             navmeshMoving &&
             unit != null &&
@@ -59,7 +74,7 @@ public class HybridMovement : MonoBehaviour
     }
 
     // =====================================================
-    // ⌨️ CLAVIER
+    // ⌨️ DÉPLACEMENT CLAVIER
     // =====================================================
     bool HandleKeyboardMovement()
     {
@@ -68,6 +83,16 @@ public class HybridMovement : MonoBehaviour
 
         if (Mathf.Abs(h) < 0.01f && Mathf.Abs(v) < 0.01f)
             return false;
+
+        // 🔥 AJOUT : le joueur rompt le combat en bougeant
+        CombatController combat = GetComponent<CombatController>();
+        Unit unit = GetComponent<Unit>();
+        if (combat != null &&
+            unit != null &&
+            unit.unitType == UnitType.Player)
+        {
+            combat.CancelCombatByPlayer();
+        }
 
         if (agent.hasPath)
             agent.ResetPath();
@@ -93,18 +118,25 @@ public class HybridMovement : MonoBehaviour
     }
 
     // =====================================================
-    // 🧭 NAVMESH
+    // 🧭 DÉPLACEMENT NAVMESH (FORMATION / SÉLECTION)
     // =====================================================
     bool HandleNavMeshMovement()
     {
         if (!agent.hasPath)
             return false;
 
+        // seuil bas pour éviter micro-oscillations
         return agent.velocity.magnitude > 0.1f;
     }
 
+    // =====================================================
+    // 🧭 ROTATION NAVMESH (AJOUT)
+    // =====================================================
     void RotateTowardsVelocity()
     {
+        if (agent == null)
+            return;
+
         Vector3 vel = agent.velocity;
         vel.y = 0f;
 
@@ -131,7 +163,7 @@ public class HybridMovement : MonoBehaviour
     }
 
     // =====================================================
-    // 🔒 BLOCAGE PNJ
+    // 🔒 DÉTECTION PNJ DEVANT
     // =====================================================
     bool IsBlockedByRecruitable(Vector3 moveDir)
     {
