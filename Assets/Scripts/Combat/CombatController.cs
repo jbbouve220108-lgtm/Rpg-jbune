@@ -29,7 +29,7 @@ public class CombatController : MonoBehaviour
     // =====================================================
     [Header("Disengage")]
     public float disengageDuration = 3f;
-    public float disengageDistance = 12f; // 🆕 distance de rupture
+    public float disengageDistance = 12f;
 
     private float disengageUntilTime = 0f;
 
@@ -68,6 +68,15 @@ public class CombatController : MonoBehaviour
 
     void Update()
     {
+        // =================================================
+        // 🔥 DÉPLACEMENT VOLONTAIRE → ANNULATION COMBAT
+        // =================================================
+        if (combatActive && IsPlayerMovingVoluntarily())
+        {
+            CancelCombatByPlayer();
+            return;
+        }
+
         if (!combatActive)
         {
             State = CombatState.Idle;
@@ -80,21 +89,19 @@ public class CombatController : MonoBehaviour
             return;
         }
 
-        // 🧨 RUPTURE PAR DISTANCE (RESTAURÉE)
         float hardDist = Vector3.Distance(
             transform.position,
             currentTarget.transform.position
         );
 
+        // rupture par distance
         if (hardDist > disengageDistance)
         {
             CancelCombatInternal(true);
             return;
         }
 
-        float dist = hardDist;
-
-        if (dist > attackRange)
+        if (hardDist > attackRange)
         {
             State = CombatState.MovingToTarget;
             MoveToTarget();
@@ -107,6 +114,21 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
+    // DÉTECTION INTENTION DE DÉPLACEMENT
+    // =====================================================
+    bool IsPlayerMovingVoluntarily()
+    {
+        Unit unit = GetComponent<Unit>();
+        if (unit == null || unit.unitType != UnitType.Player)
+            return false;
+
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+
+        return Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
+    }
+
+    // =====================================================
     // ORDRE D’ATTAQUE (INTENTION VOLONTAIRE)
     // =====================================================
     public void SetAttackTarget(CombatTarget target)
@@ -114,7 +136,6 @@ public class CombatController : MonoBehaviour
         if (target == null || !target.IsAlive)
             return;
 
-        // 🔥 intention volontaire → annule toute fuite
         disengageUntilTime = 0f;
 
         combatActive = true;
@@ -131,11 +152,10 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // APPELÉ QUAND ON SE FAIT ATTAQUER
+    // ATTAQUE SUBIE → RIPOSTE
     // =====================================================
     public void OnAttacked(CombatTarget attacker)
     {
-        // une attaque subie annule la fuite
         disengageUntilTime = 0f;
 
         if (attacker == null || !attacker.IsAlive)
@@ -174,8 +194,12 @@ public class CombatController : MonoBehaviour
 
         if (hardDisengage)
         {
-            // 🔒 fuite définitive tant que le joueur ne réengage pas
             disengageUntilTime = Time.time + disengageDuration;
+        }
+
+        if (animator != null)
+        {
+            animator.ResetTrigger("Attack");
         }
 
         if (agent != null && agent.enabled)
