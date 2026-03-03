@@ -18,9 +18,11 @@ public class Health : MonoBehaviour
     private Animator animator;
     private NavMeshAgent agent;
     private CombatController combat;
+    private Rigidbody rb;
 
     [Header("Death")]
-    public float destroyDelay = 0f;
+    public float destroyDelay = 5f;
+    public bool snapToGroundOnDeath = true;
 
     void Awake()
     {
@@ -31,16 +33,16 @@ public class Health : MonoBehaviour
         animator = GetComponentInChildren<Animator>();
         agent = GetComponent<NavMeshAgent>();
         combat = GetComponent<CombatController>();
+        rb = GetComponent<Rigidbody>();
     }
 
     void Start()
     {
-        // 🔔 Init HUD garanti (Start > Awake UI)
         NotifyHealthChanged();
     }
 
     // =====================================================
-    // TAKE DAMAGE (AVEC OU SANS ATTAQUANT)
+    // TAKE DAMAGE
     // =====================================================
     public void TakeDamage(float amount, GameObject attacker)
     {
@@ -52,7 +54,7 @@ public class Health : MonoBehaviour
 
         NotifyHealthChanged();
 
-        // 🔥 AUTO-DÉFENSE (seulement si attaquant ennemi)
+        // 🔥 AUTO-DÉFENSE
         if (attacker != null &&
             autoDefense != null &&
             myUnit != null)
@@ -92,37 +94,87 @@ public class Health : MonoBehaviour
             return;
 
         isDead = true;
-
         NotifyHealthChanged();
 
-        // 🔒 stop combat
+        // 🔒 Stop combat
         if (combat != null)
             combat.CancelCombat();
 
-        // 🔒 stop navigation
-        if (agent != null && agent.enabled)
+        // 🔒 Stop NavMesh
+        if (agent != null)
         {
-            agent.isStopped = true;
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+                agent.ResetPath();
+            }
+
             agent.enabled = false;
         }
 
-        // 🔒 stop auto-defense
+        // 🔒 Stop auto-defense
         if (autoDefense != null)
             autoDefense.enabled = false;
 
-        // 🎞️ animation de mort
+        // 🎞️ Animation de mort
         if (animator != null)
         {
             animator.ResetTrigger("Attack");
             animator.SetTrigger("Die");
         }
 
+        // 🧊 Freeze physique
+        FreezePhysics();
+
+        // 🧱 Snap au sol
+        if (snapToGroundOnDeath)
+            SnapToGround();
+
+        // 🗑️ Despawn
         if (destroyDelay > 0f)
             Destroy(gameObject, destroyDelay);
     }
 
     // =====================================================
-    // HUD SAFE NOTIFY
+    // FREEZE PHYSICS
+    // =====================================================
+    void FreezePhysics()
+    {
+        // 🔒 Désactiver tous les colliders
+        Collider[] colliders = GetComponentsInChildren<Collider>();
+        foreach (var col in colliders)
+            col.enabled = false;
+
+        // 🔒 Stop Rigidbody
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+
+        // 🔒 Rendre non sélectionnable
+        gameObject.layer = LayerMask.NameToLayer("Ignore Raycast");
+    }
+
+    // =====================================================
+    // SNAP TO GROUND
+    // =====================================================
+    void SnapToGround()
+    {
+        Ray ray = new Ray(transform.position + Vector3.up, Vector3.down);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, 5f))
+        {
+            Vector3 pos = transform.position;
+            pos.y = hit.point.y;
+            transform.position = pos;
+        }
+    }
+
+    // =====================================================
+    // HUD NOTIFY
     // =====================================================
     void NotifyHealthChanged()
     {

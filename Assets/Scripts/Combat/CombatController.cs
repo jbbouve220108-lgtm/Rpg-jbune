@@ -17,7 +17,7 @@ public class CombatController : MonoBehaviour
     public CombatTarget CurrentTarget => currentTarget;
 
     // =====================================================
-    // PARAMÈTRES EXISTANTS
+    // PARAMÈTRES EXISTANTS (fallback si pas d’arme)
     // =====================================================
     public float attackRange = 1.8f;
     public float attackDamage = 20f;
@@ -39,6 +39,7 @@ public class CombatController : MonoBehaviour
     private CombatTarget currentTarget;
     private NavMeshAgent agent;
     private Animator animator;
+    private Weapon weapon;
 
     private float lastAttackTime;
     private bool combatActive;
@@ -58,6 +59,7 @@ public class CombatController : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
+        weapon = GetComponentInChildren<Weapon>();
 
         if (agent != null)
         {
@@ -68,9 +70,7 @@ public class CombatController : MonoBehaviour
 
     void Update()
     {
-        // =================================================
         // 🔥 DÉPLACEMENT VOLONTAIRE → ANNULATION COMBAT
-        // =================================================
         if (combatActive && IsPlayerMovingVoluntarily())
         {
             CancelCombatByPlayer();
@@ -89,6 +89,12 @@ public class CombatController : MonoBehaviour
             return;
         }
 
+        if (agent == null || !agent.enabled)
+        {
+            State = CombatState.Idle;
+            return;
+        }
+
         float hardDist = Vector3.Distance(
             transform.position,
             currentTarget.transform.position
@@ -101,7 +107,9 @@ public class CombatController : MonoBehaviour
             return;
         }
 
-        if (hardDist > attackRange)
+        float range = weapon != null ? weapon.GetRange() : attackRange;
+
+        if (hardDist > range)
         {
             State = CombatState.MovingToTarget;
             MoveToTarget();
@@ -129,7 +137,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // ORDRE D’ATTAQUE (INTENTION VOLONTAIRE)
+    // ORDRE D’ATTAQUE
     // =====================================================
     public void SetAttackTarget(CombatTarget target)
     {
@@ -142,10 +150,12 @@ public class CombatController : MonoBehaviour
         currentTarget = target;
         lastTargetPosition = Vector3.zero;
 
-        if (agent != null && agent.enabled)
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
             agent.isStopped = false;
-            agent.stoppingDistance = attackRange * 0.9f;
+
+            float range = weapon != null ? weapon.GetRange() : attackRange;
+            agent.stoppingDistance = range * 0.9f;
         }
 
         State = CombatState.MovingToTarget;
@@ -165,7 +175,7 @@ public class CombatController : MonoBehaviour
     }
 
     // =====================================================
-    // DÉSENGAGEMENT VOLONTAIRE
+    // DÉSENGAGEMENT VOLONTAIRE JOUEUR
     // =====================================================
     public void CancelCombatByPlayer()
     {
@@ -177,15 +187,15 @@ public class CombatController : MonoBehaviour
         CancelCombatInternal(false);
     }
 
+    // =====================================================
+    // ANNULATION COMBAT GÉNÉRALE
+    // =====================================================
     public void CancelCombat()
     {
         disengageUntilTime = Time.time + disengageDuration;
         CancelCombatInternal(false);
     }
 
-    // =====================================================
-    // SORTIE COMBAT
-    // =====================================================
     void CancelCombatInternal(bool hardDisengage)
     {
         combatActive = false;
@@ -193,16 +203,12 @@ public class CombatController : MonoBehaviour
         State = CombatState.Idle;
 
         if (hardDisengage)
-        {
             disengageUntilTime = Time.time + disengageDuration;
-        }
 
         if (animator != null)
-        {
             animator.ResetTrigger("Attack");
-        }
 
-        if (agent != null && agent.enabled)
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
             agent.isStopped = false;
             agent.ResetPath();
@@ -234,12 +240,14 @@ public class CombatController : MonoBehaviour
     // =====================================================
     void AttackTarget()
     {
-        if (agent != null)
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
             agent.isStopped = true;
 
         RotateTowardsTarget();
 
-        if (Time.time - lastAttackTime < attackCooldown)
+        float cooldown = weapon != null ? weapon.GetCooldown() : attackCooldown;
+
+        if (Time.time - lastAttackTime < cooldown)
             return;
 
         lastAttackTime = Time.time;
@@ -278,8 +286,10 @@ public class CombatController : MonoBehaviour
         if (!HasTarget)
             return;
 
+        float damage = weapon != null ? weapon.GetDamage() : attackDamage;
+
         Health health = currentTarget.GetComponent<Health>();
         if (health != null)
-            health.TakeDamage(attackDamage, gameObject);
+            health.TakeDamage(damage, gameObject);
     }
 }
