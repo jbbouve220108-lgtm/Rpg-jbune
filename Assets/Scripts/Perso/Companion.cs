@@ -148,6 +148,12 @@ public class Companion : MonoBehaviour
             agent.enabled = true;
 
         CompanionManager.Instance.Register(this);
+
+        // 🔥 AJOUT POUR LE PARTY SYSTEM
+        if (PartyManager.Instance != null && unit != null)
+        {
+            PartyManager.Instance.AddCompanion(unit);
+        }
     }
 
     // =====================================================
