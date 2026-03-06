@@ -6,22 +6,16 @@ public class PartySlotUI : MonoBehaviour
 {
     public Button button;
 
-    private Unit unit;
+    // 🔥 texte assigné dans l'inspector
+    public TMP_Text nameText;
 
-    private TMP_Text tmpText;
-    private Text uiText;
+    private Unit unit;
 
     void Awake()
     {
         if (button == null)
         {
             button = GetComponentInChildren<Button>();
-        }
-
-        if (button != null)
-        {
-            tmpText = button.GetComponentInChildren<TMP_Text>();
-            uiText = button.GetComponentInChildren<Text>();
         }
     }
 
@@ -39,14 +33,11 @@ public class PartySlotUI : MonoBehaviour
                 displayName = unit.unitName;
         }
 
-        if (tmpText != null)
-        {
-            tmpText.text = displayName;
-        }
+        Debug.Log("PartySlotUI text = " + displayName);
 
-        if (uiText != null)
+        if (nameText != null)
         {
-            uiText.text = displayName;
+            nameText.text = displayName;
         }
 
         if (button != null)
