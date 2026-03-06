@@ -1,57 +1,58 @@
 using UnityEngine;
-using UnityEngine.AI;
 
 public class CharacterPreviewSystem : MonoBehaviour
 {
+    [Header("Preview")]
     public Transform spawnPoint;
 
-    GameObject currentCharacter;
+    private GameObject previewCharacter;
 
     public void ShowCharacter(Unit unit)
     {
-        Debug.Log("Preview du personnage : " + unit);
-
-        if (unit == null)
+        if (unit == null || spawnPoint == null)
             return;
 
-        if (spawnPoint == null)
+        // supprimer ancien preview
+        if (previewCharacter != null)
         {
-            Debug.LogError("SpawnPoint non assigné !");
-            return;
+            Destroy(previewCharacter);
         }
 
-        if (currentCharacter != null)
-            Destroy(currentCharacter);
+        // cloner le modèle du joueur
+        previewCharacter = Instantiate(unit.gameObject, spawnPoint.position, spawnPoint.rotation);
 
-        currentCharacter = Instantiate(unit.gameObject, spawnPoint);
+        // mettre le clone dans layer Preview
+        SetLayerRecursively(previewCharacter, LayerMask.NameToLayer("Preview"));
 
-        currentCharacter.transform.localPosition = Vector3.zero;
-        currentCharacter.transform.localRotation = Quaternion.identity;
-
-        // mettre le personnage dans le layer preview
-        SetLayerRecursively(currentCharacter, LayerMask.NameToLayer("CharacterPreview"));
-
-        // désactiver gameplay
-        NavMeshAgent agent = currentCharacter.GetComponent<NavMeshAgent>();
-        if (agent != null)
-            agent.enabled = false;
-
-        HybridMovement move = currentCharacter.GetComponent<HybridMovement>();
-        if (move != null)
-            move.enabled = false;
-
-        CombatController combat = currentCharacter.GetComponent<CombatController>();
-        if (combat != null)
-            combat.enabled = false;
+        // désactiver scripts gameplay
+        DisableGameplay(previewCharacter);
     }
 
-    void SetLayerRecursively(GameObject obj, int newLayer)
+    public void HideCharacter()
     {
-        obj.layer = newLayer;
+        if (previewCharacter != null)
+        {
+            Destroy(previewCharacter);
+        }
+    }
+
+    void SetLayerRecursively(GameObject obj, int layer)
+    {
+        obj.layer = layer;
 
         foreach (Transform child in obj.transform)
         {
-            SetLayerRecursively(child.gameObject, newLayer);
+            SetLayerRecursively(child.gameObject, layer);
+        }
+    }
+
+    void DisableGameplay(GameObject obj)
+    {
+        MonoBehaviour[] scripts = obj.GetComponentsInChildren<MonoBehaviour>();
+
+        foreach (MonoBehaviour script in scripts)
+        {
+            script.enabled = false;
         }
     }
 }

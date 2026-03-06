@@ -1,34 +1,76 @@
 using UnityEngine;
-using TMPro;
 using UnityEngine.UI;
+using TMPro;
 
 public class PartySlotUI : MonoBehaviour
 {
-    public TextMeshProUGUI nameText;
+    public Button button;
 
     private Unit unit;
 
-    void Start()
+    private TMP_Text tmpText;
+    private Text uiText;
+
+    void Awake()
     {
-        GetComponent<Button>().onClick.AddListener(OnClick);
+        if (button == null)
+        {
+            button = GetComponentInChildren<Button>();
+        }
+
+        if (button != null)
+        {
+            tmpText = button.GetComponentInChildren<TMP_Text>();
+            uiText = button.GetComponentInChildren<Text>();
+        }
     }
 
-    public void Setup(Unit u)
+    public void Setup(Unit newUnit)
     {
-        unit = u;
+        unit = newUnit;
 
-        if (nameText != null)
-            nameText.text = u.unitName;
+        string displayName = "";
+
+        if (unit != null)
+        {
+            if (unit.unitType == UnitType.Player)
+                displayName = "Vous";
+            else
+                displayName = unit.unitName;
+        }
+
+        if (tmpText != null)
+        {
+            tmpText.text = displayName;
+        }
+
+        if (uiText != null)
+        {
+            uiText.text = displayName;
+        }
+
+        if (button != null)
+        {
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(OnClick);
+        }
     }
 
     void OnClick()
     {
-        PartyManager.Instance.SelectUnit(unit);
-
-        // 🔥 AJOUT : rafraîchit le preview du personnage
-        if (CharacterUI.Instance != null)
+        if (unit != null)
         {
-            CharacterUI.Instance.Refresh(unit);
+            Debug.Log("Selected unit : " + unit.unitName);
+
+            if (PartyManager.Instance != null)
+            {
+                PartyManager.Instance.SelectUnit(unit);
+            }
+
+            if (CharacterUI.Instance != null)
+            {
+                CharacterUI.Instance.Refresh(unit);
+            }
         }
     }
 }

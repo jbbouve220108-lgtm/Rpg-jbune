@@ -13,14 +13,12 @@ public class CharacterUI : MonoBehaviour
 
     public void Refresh(Unit unit)
     {
-        Debug.Log("CharacterUI Refresh appelé avec : " + unit);
-
         if (unit == null)
             return;
 
         if (preview == null)
         {
-            Debug.LogError("CharacterPreviewSystem non assigné dans CharacterUI !");
+            Debug.LogError("CharacterPreviewSystem non assigné !");
             return;
         }
 
